@@ -20,7 +20,7 @@ solana_client = Client("https://api.mainnet-beta.solana.com")
 spark = SparkSession.builder.appName('solana_transform').getOrCreate()
 
 # setup PostgreSQL engine
-engine = create_engine('postgresql://user:password@localhost:5432/mydatabase')
+engine = create_engine('postgresql://postgres:postgres@localhost:5432/mydatabase')
 
 
 def extract_data(contract_address: str) -> DataFrame:
