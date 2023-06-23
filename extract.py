@@ -1,15 +1,19 @@
 import logging
 import pandas as pd
-from solana.account import Account
-from solana.publickey import PublicKey
 from solana.rpc.api import Client
 from pyspark.sql import SparkSession
-from sqlalchemy import create_engine
+import solana.rpc.api
+import pyspark
+import solana
+import sqlalchemy
 from pyspark.sql import DataFrame
 from datetime import datetime, timedelta
 from pyspark.sql.functions import col
+import psycopg2
 
 # setup logging
+from sqlalchemy import create_engine
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -25,11 +29,8 @@ engine = create_engine('postgresql+psycopg2://postgres:postgres@localhost:5432/m
 
 def extract_data(contract_address: str) -> DataFrame:
     try:
-        # Convert the contract address to a PublicKey
-        contract_pubkey = PublicKey(contract_address)
-
         # Request account info from the Solana node
-        response = solana_client.get_account_info(contract_pubkey)
+        response = solana_client.get_account_info(contract_address)
 
         # The actual data will be located in the response['result']['value'] dictionary
         raw_data = response['result']['value']
