@@ -1,0 +1,47 @@
+\subsubsection{Extract}
+
+\begin{lstlisting}[language=Python]
+import requests
+import json
+
+def extract_data_from_solana(contract_address):
+    # Assume this API endpoint for illustration purpose
+    url = f"https://api.solana.com/v1/contract/{contract_address}"
+    response = requests.get(url)
+    data = json.loads(response.text)
+    return data
+\end{lstlisting}
+
+\subsubsection{Transform}
+
+\begin{lstlisting}[language=Python]
+from datetime import datetime, timedelta
+
+def transform_data(data):
+    transformed_data = []
+    two_years_ago = datetime.now() - timedelta(days=2*365)
+    for record in data:
+        if (record['contract'] == 'Magic Eden' and 
+            datetime.strptime(record['timestamp'], '%Y-%m-%d') > two_years_ago):
+            transformed_data.append(record)
+    return transformed_data
+\end{lstlisting}
+
+\subsubsection{Load}
+
+\begin{lstlisting}[language=Python]
+import psycopg2
+
+def load_data_into_postgres(transformed_data, db_config):
+    conn = psycopg2.connect(**db_config)
+    cur = conn.cursor()
+    for record in transformed_data:
+        # Assume columns are 'col1', 'col2', 'col3'
+        cur.execute(
+            "INSERT INTO your_table (col1, col2, col3) VALUES (%s, %s, %s)", 
+            (record['col1'], record['col2'], record['col3'])
+        )
+    conn.commit()
+    cur.close()
+    conn.close()
+\end{lstlisting}
