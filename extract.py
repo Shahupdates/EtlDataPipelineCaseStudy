@@ -10,6 +10,8 @@ from pyspark.sql import DataFrame
 from datetime import datetime, timedelta
 from pyspark.sql.functions import col
 import psycopg2
+import json
+import requests
 
 # setup logging
 from sqlalchemy import create_engine
@@ -27,29 +29,59 @@ spark = SparkSession.builder.appName('solana_transform').getOrCreate()
 engine = create_engine('postgresql+psycopg2://postgres:postgres@localhost:5432/mydatabase')
 
 
+
+
+
 def extract_data(contract_address: str) -> DataFrame:
     try:
-        # Request account info from the Solana node
-        response = solana_client.get_account_info(contract_address)
+        # Construct the API URL
+        url = "https://api.mainnet-beta.solana.com"
 
-        # The actual data will be located in the response['result']['value'] dictionary
-        raw_data = response['result']['value']
+        # Create the JSON-RPC request payload
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getAccountInfo",
+            "params": [
+                contract_address,
+                {
+                    "encoding": "jsonParsed"
+                }
+            ]
+        }
 
-        # Print raw data to inspect its structure
-        print(raw_data)
+        # Send a POST request to the API
+        response = requests.post(url, json=payload)
 
-        # Depending on the structure of raw_data, you might want to flatten it into a format that's suitable for conversion to a DataFrame
-        # Here, I'm assuming raw_data is a dictionary. If it's not, you'll need to adjust this part.
-        data_df = pd.DataFrame([raw_data])  # Creates a single row DataFrame from the dictionary
+        # Check if the request was successful
+        if response.status_code == 200:
+            data = response.json()
 
-        # Convert pandas DataFrame to Spark DataFrame
-        spark_df = spark.createDataFrame(data_df)
+            if "result" in data:
+                raw_data = data["result"]
+                # Print raw data to inspect its structure
+                print(raw_data)
 
-        return spark_df
+                # Depending on the structure of raw_data, you might want to flatten it into a format that's suitable for conversion to a DataFrame
+                # Here, I'm assuming raw_data is a dictionary. If it's not, you'll need to adjust this part.
+                data_df = pd.DataFrame([raw_data])  # Creates a single row DataFrame from the dictionary
+
+                # Convert pandas DataFrame to Spark DataFrame
+                spark_df = spark.createDataFrame(data_df)
+
+                return spark_df
+            else:
+                logger.error("No 'result' key found in the API response.")
+                raise Exception("Failed to retrieve data from Solana")
+        else:
+            logger.error("Failed to retrieve data from Solana. Status code: %d", response.status_code)
+            raise Exception("Failed to retrieve data from Solana")
 
     except Exception as e:
         logger.error("Failed to extract data from Solana.", exc_info=True)
         raise e
+
+
 
 
 def transform_data(data: DataFrame, contract_address: str) -> DataFrame:
