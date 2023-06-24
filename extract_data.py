@@ -16,7 +16,13 @@ def get_latest_blockhash():
     }
     response = requests.post(url, headers=headers, data=json.dumps(payload))
     response_data = response.json()
-    return response_data['result']['value']['blockhash'], response_data['result']['value']['lastValidBlockHeight']
+    if 'result' in response_data and 'value' in response_data['result']:
+        blockhash = response_data['result']['value'].get('blockhash')
+        lastValidBlockHeight = response_data['result']['value'].get('lastValidBlockHeight')
+        if blockhash and lastValidBlockHeight:
+            return blockhash, lastValidBlockHeight
+    print("Error: Unexpected API response format.")
+    return None, None
 
 def get_addresses_from_blockhash(blockhash):
     payload = {
