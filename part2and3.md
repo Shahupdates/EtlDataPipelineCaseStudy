@@ -119,21 +119,21 @@ To run the ETL pipeline, follow these steps:
 Clone the Repository: Clone the repository to your local machine using the following command:
 
 bash
-Copy code
+ code
 git clone https://github.com/your-username/etlpipeline.git
 Navigate to the Project Directory: Open a terminal and navigate to the project directory using the following command:
 
 bash
-Copy code
+ code
 cd etlpipeline
 Install Dependencies: Install the required Python dependencies by running the following command:
 
-Copy code
+ code
 pip install -r requirements.txt
 Configure PostgreSQL Connection: Open the profiles.yml file located in the .dbt directory. Modify the dev section with your PostgreSQL credentials:
 
 yaml
-Copy code
+ code
 default:
   outputs:
     dev:
@@ -147,17 +147,17 @@ default:
   target: dev
 Extraction: Run the extraction script by executing the following command:
 
-Copy code
+ code
 python extract_data.py
 Transformation: Apply the transformations using DBT by running the following command:
 
 css
-Copy code
+ code
 dbt run --models transform
 Loading: Load the transformed data into the PostgreSQL database using Spark by executing the following command:
 
 css
-Copy code
+ code
 dbt run --models transform
 4. Collaboration with Data Science and Business Teams
 To collaborate with data science and business teams and adjust the ETL pipeline to meet their needs, the following strategies can be employed:
