@@ -1,20 +1,23 @@
 import requests
 import json
-import psycopg2
 import datetime
+from pyspark.sql import SparkSession
 
 url = "https://api.mainnet-beta.solana.com"
 headers = {"Content-Type": "application/json"}
 
+# Start Spark session
+spark = SparkSession.builder \
+    .appName("Solana ETL") \
+    .config("spark.jars.packages", "org.postgresql:postgresql:42.2.20") \
+    .getOrCreate()
+
 # PostgreSQL connection details
-conn = psycopg2.connect(
-    host='127.0.0.1',
-    port='5432',
-    database='main_database',
-    user='postgres',
-    password='postgres'
-)
-cursor = conn.cursor()
+jdbcUrl = "jdbc:postgresql://localhost/main_database"
+table = "public.transactions"
+properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
+
+
 
 
 def get_block(slot):
@@ -101,20 +104,11 @@ def transform_data(data):
     ]
     return filtered_data
 
+
 def load_data(data):
-    # Assuming you have a table named 'transactions' with appropriate columns in your PostgreSQL database
-    insert_query = "INSERT INTO public.transactions (address, timestamp, amount) VALUES (%s, to_timestamp(%s), %s)"
-    for record in data:
-        cursor.execute(insert_query, (record['address'], record['timestamp'], record['amount']))
-    conn.commit()
+    df = spark.createDataFrame(data)
+    df.write.jdbc(url=jdbcUrl, table=table, mode="append", properties=properties)
     print('Data loaded successfully.')
-
-
-def close_connection():
-    if conn:
-        cursor.close()
-        conn.close()
-        print("PostgreSQL connection is closed.")
 
 
 if __name__ == '__main__':
@@ -124,4 +118,6 @@ if __name__ == '__main__':
         if transactions is not None:
             data = transform_data(transactions)
             load_data(data)
-    close_connection()
+
+
+spark.stop()
