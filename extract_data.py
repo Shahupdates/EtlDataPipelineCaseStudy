@@ -111,7 +111,8 @@ if latest_blockhash is not None:
     block_data = get_block(latest_blockhash)
     if block_data is not None:
         # Loop through each transaction in the block and get the addresses involved in the transaction
-        addresses = [address for transaction in block_data['transactions'] for address in
+        block_data, block_time = get_block(latest_blockhash)
+        addresses = [address for transaction in block_data['transactions'] for address  in
                      transaction['transaction']['message']['accountKeys']]
 
         # Process only a subset of addresses to avoid rate limits
