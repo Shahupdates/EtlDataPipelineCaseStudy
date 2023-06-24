@@ -46,7 +46,11 @@ def get_block(slot):
                         amount = post_balance - pre_balance  # Receiver
                     else:
                         amount = pre_balance - post_balance  # Sender
-                    transaction_dict = {'address': account, 'amount': amount, 'timestamp': result['blockTime']}  # Create a dictionary for each transaction
+                    transaction_dict = {
+                        'address': account,
+                        'amount': amount,
+                        'timestamp': datetime.datetime.fromtimestamp(result['blockTime']).strftime('%Y-%m-%d %H:%M:%S')
+                    }
                     transactions_list.append(transaction_dict)  # Add the dictionary to the list
             return transactions_list, result.get('blockTime')
         else:
@@ -95,18 +99,22 @@ def get_magic_nfts(address):
             return [tokens.get('token')]
     return None
 
-
 def transform_data(data):
     print(data[:5])  # print the first 5 items
     filtered_data = [
-        record for record in data if datetime.datetime.fromtimestamp(int(record['timestamp'])) >
-                                   datetime.datetime.now() - datetime.timedelta(days=365 * 2)
+        {
+            'address': record['address'],
+            'amount': record['amount'],
+            'timestamp': datetime.datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S')
+        }
+        for record in data
+        if datetime.datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S') > datetime.datetime.now() - datetime.timedelta(days=365 * 2)
     ]
     return filtered_data
 
 
 def load_data(data):
-    df = spark.createDataFrame(data)
+    df = spark.createDataFrame(data, ["address", "amount", "timestamp"])
     df.write.jdbc(url=jdbcUrl, table=table, mode="append", properties=properties)
     print('Data loaded successfully.')
 
@@ -119,5 +127,4 @@ if __name__ == '__main__':
             data = transform_data(transactions)
             load_data(data)
 
-
-spark.stop()
+    spark.stop()
