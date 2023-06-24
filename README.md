@@ -1,49 +1,91 @@
-# EtlDataPipelineCaseStudy
-Backend/Data Eng - Case Study
+# ETL Pipeline Documentation
+This repository contains an ETL (Extract, Transform, Load) pipeline for processing blockchain transaction data from Solana Blockchain. The pipeline extracts data from the blockchain, applies transformation based on business rules, and loads the transformed data into PostgreSQL.
+## Prerequisites
+Before running the ETL pipeline, ensure that you have the following dependencies installed:
+
+* Python (version X.X.X)
+* PostgreSQL (version X.X.X)
+* Spark (version X.X.X)
 
 
-Technical Case Study: ETL Pipeline Development and Optimization
+# Setup
+1. Clone the repository to your local machine: ``` git clone https://github.com/your-username/etlpipeline.git
+ ```
+2. Navigate to the project directory: ``` cd etlpipeline ```
 
-Objective: The purpose of this technical exercise is to evaluate your skills in designing, developing, optimizing and troubleshooting a big data ETL (Extract, Transform, Load) pipeline. You will use a combination of SQL, Python, DBT and a big data technology of your choice (Hadoop, Spark, etc.).
+3. Install the required Python dependencies: ``` pip install -r requirements.txt ```
 
+4. Configure the PostgreSQL connection in the profiles.yml file located in the .dbt directory. Modify the dev section with your PostgreSQL credentials:
+```
+default:
+  outputs:
+    dev:
+      type: postgres
+      host: 127.0.0.2
+      port: 5432
+      user: postgres
+      pass: postgres
+      dbname: postgres
+      schema: myschema
+  target: dev
+```
 
-Background: Our company collects blockchain transaction data from various digital platforms, which needs to be processed and analyzed to support business decisions.
+## Extraction
+The extraction script extract_data.py retrieves data from the Solana Blockchain. It performs the following steps:
 
-Your task is to develop a scalable ETL pipeline that extracts data from Solana Blockchain nodes, transforms it based on specific business rules, and loads the transformed data into PostgreSQL.
+Connects to the Solana Blockchain API.
+Retrieves the latest block hash.
+Extracts addresses from the block hash.
+Prints the unique addresses.
+To run the extraction script, execute the following command: ``` python extract_data.py ```
 
-Part 1: ETL Pipeline Development (3-4 Hours)
-Extract: Write a script in Python to extract data from Solana Blockchain.
-Transform: Develop a transformation function based on the following business rules:
-Rule 1: Only extract data from Magic Eden contracts.
-Rule 2: Filter out any records that are older than two years.
-Your script should be able to get a contract address as a variable so it could be used for other contract addresses too.
+## Transformation
+The transformation logic is defined in the transformation.sql file located in the models/transform directory. It applies the following business rules:
 
+Only extracts data from Magic Eden contracts.
+Filters out records older than two years.
+To run the transformation, execute the following command: ``` dbt run --models transform ```
 
-Load: Write a script to load the transformed data into PostgreSQL.
+## Loading
+The loading process involves loading the transformed data into PostgreSQL using Spark. The transformed data is written to the transformed_addresses table in the myschema schema.
 
-For each function in the contract you should create a new table.
+To load the data, execute the following command: ``` dbt run --models transform ```
 
-You are free to use different tables, ideally you should have a raw data table and aggregated tables like daily active users, daily transaction volume etc.
+## Configuration
+The configuration for the ETL pipeline is defined in the dbt_project.yml file. It specifies the project name, version, and model settings. Modify the file according to your specific requirements.
+```
+name: 'my_new_project'
+version: '1.0.0'
 
-Part 2: Optimization and Troubleshooting (1 Hour)
-Based on your understanding of big data technologies and databases, identify potential performance bottlenecks in your ETL pipeline and propose solutions to optimize it. Discuss how to stream the data from blockchain and update the database with real-time data.
-Assume that the ETL pipeline failed during the transformation stage. Discuss how you would troubleshoot this issue.
+profile: 'default'
 
-Part 3: Collaboration and Documentation (1 Hour)
-Prepare a short document explaining how your ETL pipeline works, any decisions you made, and instructions on how to run it. This document should be written with both technical and non-technical colleagues in mind.
-Describe how you would collaborate with data science and business teams to understand their data needs and how your ETL pipeline could be adjusted to meet these needs.
-Deliverables
-The source code of your ETL pipeline.
-A document explaining your ETL pipeline, any decisions you made, instructions on how to run it, and your collaboration strategy with the data science and business teams.
-An explanation of how you identified and proposed to optimize performance bottlenecks.
-A troubleshooting guide for the pipeline.
+source-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+data-paths: ["data"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
 
-Your evaluation will be based on the quality of your code, the scalability of your ETL pipeline, your ability to optimize and troubleshoot, your ability to communicate technical concepts, and your collaboration strategy.
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_modules"
 
+models:
+  my_new_project:
+    enabled: true
+    materialized: view
+    sql: models/transform/transformation.sql
+```
 
-Part 4 (optional): (3-4 Hours)
+## Additional Information
+For more details on the ETL pipeline, refer to the individual code files and SQL queries. Feel free to explore and customize the pipeline according to your specific requirements.
 
-Using the database you have created, create a dashboard which has insights from the data like daily active users, daily volume, counts of transactions etc. However, this dashboard should be real-time, you need to update data on the dashboard when there is a new transaction written.
+```
+extract_data.py
+models/transform/transformation.sql
+dbt_project.yml
+```
 
-
-You are free to use Retool for your dashboard needs. It is a no-code dashboard platform, so you do not need to write frontend
+## Contact
+If you have any questions or need assistance, please contact [Me] at [lks9@njit.edu].
