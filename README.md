@@ -9,8 +9,7 @@ Before running the ETL pipeline, ensure that you have the following dependencies
 
 
 # Setup
-1. Clone the repository to your local machine: ``` git clone https://github.com/your-username/etlpipeline.git
- ```
+1. Clone the repository to your local machine: ``` git clone https://github.com/your-username/etlpipeline.git ```
 2. Navigate to the project directory: ``` cd etlpipeline ```
 
 3. Install the required Python dependencies: ``` pip install -r requirements.txt ```
@@ -33,18 +32,18 @@ default:
 ## Extraction
 The extraction script extract_data.py retrieves data from the Solana Blockchain. It performs the following steps:
 
-Connects to the Solana Blockchain API.
-Retrieves the latest block hash.
-Extracts addresses from the block hash.
-Prints the unique addresses.
-To run the extraction script, execute the following command: ``` python extract_data.py ```
+* Connects to the Solana Blockchain API.
+* Retrieves the latest block hash.
+* Extracts addresses from the block hash.
+* Prints the unique addresses.
+* To run the extraction script, execute the following command: ``` python extract_data.py ```
 
 ## Transformation
 The transformation logic is defined in the transformation.sql file located in the models/transform directory. It applies the following business rules:
 
-Only extracts data from Magic Eden contracts.
-Filters out records older than two years.
-To run the transformation, execute the following command: ``` dbt run --models transform ```
+* Only extracts data from Magic Eden contracts.
+* Filters out records older than two years.
+* To run the transformation, execute the following command: ``` dbt run --models transform ```
 
 ## Loading
 The loading process involves loading the transformed data into PostgreSQL using Spark. The transformed data is written to the transformed_addresses table in the myschema schema.
@@ -87,5 +86,5 @@ models/transform/transformation.sql
 dbt_project.yml
 ```
 
-## Contact
-If you have any questions or need assistance, please contact [Me] at [lks9@njit.edu].
+## License
+Read License.txt for license information and proper usage.
