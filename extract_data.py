@@ -2,6 +2,8 @@ import requests
 import json
 import datetime
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, row_number
+from pyspark.sql.window import Window
 
 url = "https://api.mainnet-beta.solana.com"
 headers = {"Content-Type": "application/json"}
@@ -115,7 +117,11 @@ def transform_data(data):
 
 def load_data(data):
     df = spark.createDataFrame(data, ["address", "amount", "timestamp"])
-    df.write.jdbc(url=jdbcUrl, table=table, mode="append", properties=properties)
+
+    # Remove duplicates based on the address and timestamp columns
+    deduplicated_df = df.dropDuplicates(["address", "timestamp"])
+
+    deduplicated_df.write.jdbc(url=jdbcUrl, table=table, mode="append", properties=properties)
     print('Data loaded successfully.')
 
 
