@@ -23,27 +23,29 @@ def get_block(slot):
             "jsonrpc": "2.0",
             "id": 1,
             "method": "getBlock",
-            "params": [slot, {"encoding": "json", "transactionDetails": "full", "rewards": False,
-                             "maxSupportedTransactionVersion": 0}]
+            "params": [slot, {"encoding": "json", "transactionDetails": "full", "rewards": False, "maxSupportedTransactionVersion": 0}]
         }
         response = requests.post(url, headers=headers, data=json.dumps(payload))
         response_data = response.json()
+        transactions_list = []  # List to hold all transactions
         if 'result' in response_data:
-            result = response_data['result']
             # Including the blockTime in the returned result
-            transactions = []
-            for transaction in result.get('transactions', []):
-                transaction_info = transaction['transaction']
-                meta = transaction.get('meta', {})
-                # Calculate the amount from preBalances and postBalances
-                amount = sum(meta.get('postBalances', [])) - sum(meta.get('preBalances', []))
-                # Create a new transaction record
-                transactions.append({
-                    'timestamp': result.get('blockTime'),
-                    'address': transaction_info['message']['accountKeys'][0],
-                    'amount': amount,
-                })
-            return transactions, result.get('blockTime')
+            result = response_data['result']
+            transactions = result['transactions']
+            for transaction in transactions:
+                message = transaction['transaction']['message']
+                meta = transaction['meta']
+                for i, account in enumerate(message['accountKeys']):
+                    # Calculate amount based on whether account is a sender or a receiver
+                    pre_balance = meta['preBalances'][i]
+                    post_balance = meta['postBalances'][i]
+                    if account in message['instructions'][0]['accounts']:
+                        amount = post_balance - pre_balance  # Receiver
+                    else:
+                        amount = pre_balance - post_balance  # Sender
+                    transaction_dict = {'address': account, 'amount': amount, 'timestamp': result['blockTime']}  # Create a dictionary for each transaction
+                    transactions_list.append(transaction_dict)  # Add the dictionary to the list
+            return transactions_list, result.get('blockTime')
         else:
             print("Error: No 'result' key found in the response.")
             print(response_data)
