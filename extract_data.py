@@ -33,8 +33,93 @@ def get_addresses_from_blockhash(blockhash):
         print(f"Error retrieving addresses from block hash {blockhash}: {response_data.get('error')}")
         return []
 
-# Set the working directory to the main folder
-os.chdir("etlpipeline")
+# ADDITION: Check if a wallet address has Magic Eden NFTs
+def has_magic_nfts(address):
+    magic_endpoint = "https://api-mainnet.magiceden.dev/v2/wallets/{}/tokens"
+    magic_response = requests.get(magic_endpoint.format(address))
+    return magic_response.status_code == 200
+
+
+def get_signatures_for_address(address, limit=1000):
+    try:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getSignaturesForAddress",
+            "params": [
+                address,
+                {
+                    "limit": limit
+                }
+            ]
+        }
+
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response_data = response.json()
+
+        if 'result' in response_data:
+            return response_data['result']
+        else:
+            print(f"Error for address {address}: No 'result' key found in the response.")
+            print(response_data)
+            return None
+    except KeyError as e:
+        print(f"Error for address {address}: KeyError -", e)
+        return None
+    except Exception as e:
+        print(f"Error for address {address}:", e)
+        return None
+
+
+def get_block(slot):
+    try:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getBlock",
+            "params": [slot, {"encoding": "json", "transactionDetails": "full", "rewards": False, "maxSupportedTransactionVersion": 0}]
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response_data = response.json()
+        if 'result' in response_data:
+            return response_data['result']
+        else:
+            print("Error: No 'result' key found in the response.")
+            print(response_data)
+            return None
+    except KeyError as e:
+        print("Error: KeyError -", e)
+        return None
+    except Exception as e:
+        print("Error:", e)
+        return None
+
+def get_latest_blockhash():
+    try:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getLatestBlockhash"
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response_data = response.json()
+        if 'result' in response_data:
+            return response_data['result']['context']['slot']
+        else:
+            print("Error: No 'result' key found in the response.")
+            print(response_data)
+            return None
+    except KeyError as e:
+        print("Error: KeyError -", e)
+        return None
+    except Exception as e:
+        print("Error:", e)
+        return None
+
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+nested_etl_dir = os.path.join(script_dir, "etlpipeline")
+os.chdir(nested_etl_dir)
 
 # Create a SparkSession
 spark = SparkSession.builder \
@@ -53,12 +138,20 @@ if latest_blockhash is not None:
     print(f"Addresses for block hash: {latest_blockhash}")
 
     for address in addresses:
-        unique_addresses.add(address)
+        # Check if the address has Magic Eden NFTs
+        if has_magic_nfts(address):
+            unique_addresses.add(address)
 
-# Print the unique addresses
-print("Unique addresses:")
+# Get and print signatures for each unique address
 for address in unique_addresses:
-    print(address)
+    print(f"Address: {address}")
+    signatures = get_signatures_for_address(address)
+
+    if signatures:
+        print("Signatures:")
+        for signature in signatures:
+            print(signature)
+    print()
 
 # Run the dbt transformation
 run(["dbt", "run", "--models", "transform"])
