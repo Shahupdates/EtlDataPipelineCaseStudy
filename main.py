@@ -1,9 +1,34 @@
 import time
 import requests
 import json
+import psycopg2
+from datetime import datetime, timedelta
+from pyspark.sql import SparkSession
+
+# Create a SparkSession
+spark = SparkSession.builder \
+    .appName("ETL") \
+    .getOrCreate()
+
+
+
+# PostgreSQL database configuration
+db_host = "127.0.0.2"
+db_name = "postgres"
+db_user = "postgres"
+db_password = "postgres"
+table_name = "your_table_name"
 
 url = "https://api.mainnet-beta.solana.com"
 headers = {"Content-Type": "application/json"}
+
+# Establish a connection to the PostgreSQL database
+conn = psycopg2.connect(
+    host=db_host,
+    database=db_name,
+    user=db_user,
+    password=db_password
+)
 
 def get_latest_blockhash():
     payload = {
@@ -230,18 +255,33 @@ def get_recent_prioritization_fees(addresses=None):
     return response_data['result']
 
 def get_signatures_for_address(address, limit=None):
-    params = [address]
-    if limit:
-        params.append({"limit": limit})
-    payload = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "getSignaturesForAddress",
-        "params": params
-    }
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-    response_data = response.json()
-    return response_data['result']
+    try:
+        params = [
+            address,
+            {
+                "limit": limit
+            }
+        ]
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getSignaturesForAddress",
+            "params": params
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response_data = response.json()
+        if 'result' in response_data:
+            return response_data['result']
+        else:
+            print("Error: No 'result' key found in the response.")
+            print(response_data)
+            return None
+    except KeyError as e:
+        print("Error: KeyError -", e)
+        return None
+    except Exception as e:
+        print("Error:", e)
+        return None
 
 def get_signature_statuses(signatures, search_transaction_history=None):
     params = [signatures]
@@ -291,87 +331,131 @@ def get_slot_leader(commitment=None, min_context_slot=None):
     response_data = response.json()
     return response_data['result']
 
+def get_transactions_for_address(address):
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "getConfirmedSignaturesForAddress2",
+        "params": [address, {"limit": 100}]
+    }
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response_data = response.json()
+    if 'result' in response_data:
+        return response_data['result']
+    else:
+        print(f"Error retrieving transactions for address {address}: {response_data.get('error')}")
+        return []
 
-# Using the functions
-blockhash, last_valid_block_height = get_latest_blockhash()
-print(f"Blockhash: {blockhash}")
-print(f"Last Valid Block Height: {last_valid_block_height}")
 
-commitment, total_stake = get_block_commitment(5)
-print(f"Commitment: {commitment}")
-print(f"Total Stake: {total_stake}")
+def get_block(slot):
+    try:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getBlock",
+            "params": [slot, {"encoding": "json", "transactionDetails": "full", "rewards": False, "maxSupportedTransactionVersion": 0}]
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response_data = response.json()
+        if 'result' in response_data:
+            block_data = response_data['result']
+            block_time = block_data.get('blockTime', None)
+            if block_time is not None:
+                block_data['timestamp'] = block_time
+            return block_data
+        else:
+            print("Error: No 'result' key found in the response.")
+            print(response_data)
+            return None
+    except KeyError as e:
+        print("Error: KeyError -", e)
+        return None
+    except Exception as e:
+        print("Error:", e)
+        return None
 
-blocks = get_blocks(5, 10)
-print(f"Blocks: {blocks}")
+def get_latest_blockhash():
+    try:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getLatestBlockhash"
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response_data = response.json()
+        if 'result' in response_data:
+            return response_data['result']['context']['slot']
+        else:
+            print("Error: No 'result' key found in the response.")
+            print(response_data)
+            return None
+    except KeyError as e:
+        print("Error: KeyError -", e)
+        return None
+    except Exception as e:
+        print("Error:", e)
+        return None
 
-blocksWithLimit = get_blocksWithLimit(5, 3)
-print(f"Blocks: {blocksWithLimit}")
 
-block_time, error = get_block_time(5)
-if error:
-    print(f"Error: {error}")
-else:
-    print(f"Block Time: {block_time}")
+# Get the most recent block hash
+latest_blockhash = get_latest_blockhash()
 
-# Using the new functions
-cluster_nodes = get_cluster_nodes()
-print(f"Cluster Nodes: {cluster_nodes}")
+# Unique addresses involved in the transactions
+unique_addresses = set()
 
-epoch_info = get_epoch_info()
-print(f"Epoch Info: {epoch_info}")
+# If we have a recent block hash, get its details
+if latest_blockhash is not None:
+    block_data = get_block(latest_blockhash)
+    if block_data is not None:
+        # Loop through each transaction in the block
+        for transaction in block_data['transactions']:
+            # Get the addresses involved in the transaction
+            for address in transaction['transaction']['message']['accountKeys']:
+                unique_addresses.add(address)
 
-epoch_schedule = get_epoch_schedule()
-print(f"Epoch Schedule: {epoch_schedule}")
 
-fee_for_message = get_fee_for_message("AQABAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAQAA")
-print(f"Fee for Message: {fee_for_message}")
+def filter_records(records):
+    filtered_records = []
+    current_time = datetime.now()
+    two_years_ago = current_time - timedelta(days=365 * 2)
 
-first_available_block = get_first_available_block()
-print(f"First Available Block: {first_available_block}")
+    for record in records:
+        if 'blockTime' in record and record['blockTime'] is not None:
+            # Extract the blockTime field as the timestamp
+            timestamp = datetime.fromtimestamp(record['blockTime'])
 
-# Using the new functions
-inflation_governor = get_inflation_governor()
-print(f"Inflation Governor: {inflation_governor}")
+            if timestamp >= two_years_ago:
+                filtered_records.append(record)
 
-inflation_rate = get_inflation_rate()
-print(f"Inflation Rate: {inflation_rate}")
+    return filtered_records
 
-leader_schedule = get_leader_schedule()
-print(f"Leader Schedule: {leader_schedule}")
 
-# Using the new functions
-max_retransmit_slot = get_max_retransmit_slot()
-print(f"Max Retransmit Slot: {max_retransmit_slot}")
+# Create a cursor to execute SQL queries
+cursor = conn.cursor()
 
-max_shred_insert_slot = get_max_shred_insert_slot()
-print(f"Max Shred Insert Slot: {max_shred_insert_slot}")
+# Create the table if it doesn't exist
+create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} (transaction_id TEXT, address TEXT)"
+cursor.execute(create_table_query)
+conn.commit()
 
-minimum_balance_for_rent_exemption = get_minimum_balance_for_rent_exemption(50)
-print(f"Minimum Balance For Rent Exemption: {minimum_balance_for_rent_exemption}")
+# Get transactions for the unique addresses
+for address in unique_addresses:
+    transactions = get_transactions_for_address(address)
+    print(f"Transactions for address: {address}")
 
-multiple_accounts = get_multiple_accounts(["vines1vzrYbzLMRdu58ou5XTby4qAqVRLmqo36NKPTg", "4fYNw3dojWmQ4dXtSGE9epjRGy9pFSx62YypT7avPYvA"])
-print(f"Multiple Accounts: {multiple_accounts}")
+    # Filter out records older than two years
+    filtered_transactions = filter_records(transactions)
 
-# Test get_recent_performance_samples function
-recent_performance_samples = get_recent_performance_samples(5)
-print(f"Recent Performance Samples: {recent_performance_samples}")
+    for transaction in filtered_transactions:
+        # Retrieve the transaction ID from the 'signature' field
+        transaction_id = transaction['signature']
 
-# Test get_recent_prioritization_fees function
-recent_prioritization_fees = get_recent_prioritization_fees(["So11111111111111111111111111111111111111112"])
-print(f"Recent Prioritization Fees: {recent_prioritization_fees}")
+        # Insert each transaction into the PostgreSQL table
+        insert_query = f"INSERT INTO {table_name} (transaction_id, address) VALUES (%s, %s)"
+        values = (transaction_id, address)
+        cursor.execute(insert_query, values)
+        conn.commit()
 
-# Test get_signatures_for_address function
-signatures_for_address = get_signatures_for_address("4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T")
-print(f"Signatures For Address: {signatures_for_address}")
-
-# Test get_signature_statuses function
-signature_statuses = get_signature_statuses(["4fW2UzNVA7gE1HUnBoRWcHY8YbXgN9GXPzqbS4Q4HSGyNtZRmzHnv2LVULGEX3KMk4tPXQaG9gSow27j7BqKMJhP"])
-print(f"Signature Statuses: {signature_statuses}")
-
-# Test get_slot function
-slot = get_slot()
-print(f"Slot: {slot}")
-
-# Test get_slot_leader function
-slot_leader = get_slot_leader()
-print(f"Slot Leader: {slot_leader}")
+# Close the cursor and the database connection
+cursor.close()
+conn.close()
