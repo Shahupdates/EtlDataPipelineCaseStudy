@@ -33,6 +33,12 @@ def get_addresses_from_blockhash(blockhash):
         print(f"Error retrieving addresses from block hash {blockhash}: {response_data.get('error')}")
         return []
 
+# ADDITION: Check if a wallet address has Magic Eden NFTs
+def has_magic_nfts(address):
+    magic_endpoint = "https://api-mainnet.magiceden.dev/v2/wallets/{}/tokens"
+    magic_response = requests.get(magic_endpoint.format(address))
+    return magic_response.status_code == 200
+
 # Set the working directory to the main folder
 os.chdir("etlpipeline")
 
@@ -53,7 +59,9 @@ if latest_blockhash is not None:
     print(f"Addresses for block hash: {latest_blockhash}")
 
     for address in addresses:
-        unique_addresses.add(address)
+        # ADDITION: Check if the address has Magic Eden NFTs
+        if has_magic_nfts(address):
+            unique_addresses.add(address)
 
 # Print the unique addresses
 print("Unique addresses:")
