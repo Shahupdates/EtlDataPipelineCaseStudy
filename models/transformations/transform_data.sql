@@ -1,7 +1,8 @@
 SELECT
   address,
   amount,
-  timestamp
+  timestamp,
+  amount_sol
 FROM
   public.transactions
 WHERE
