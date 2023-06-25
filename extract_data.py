@@ -96,11 +96,9 @@ def get_magic_nfts(address):
     magic_response = requests.get(magic_endpoint.format(address))
     if magic_response.status_code == 200:
         tokens = magic_response.json()
-        if isinstance(tokens, list):
-            return [token.get('token') for token in tokens]
-        elif isinstance(tokens, dict):
-            return [tokens.get('token')]
-    return None
+        if tokens:
+            return True
+    return False
 
 """
 def transform_data(data):
