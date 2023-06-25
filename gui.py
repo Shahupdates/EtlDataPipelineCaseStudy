@@ -43,5 +43,20 @@ if __name__ == '__main__':
     app.setStyleSheet(open('styles.qss').read())
 
     window = MainWindow()
+
+    # Center the window on the screen
+    window.setGeometry(
+        app.desktop().screen().rect().center().x() - window.width() // 2,
+        app.desktop().screen().rect().center().y() - window.height() // 2,
+        window.width(),
+        window.height()
+    )
+
+    # Set application icon
+    window.setWindowIcon(app.style().standardIcon(QStyleFactory.SP_DialogApplyButton))
+
+    # Set the status bar message
+    window.statusBar().showMessage("Ready")
+
     window.show()
     sys.exit(app.exec_())
