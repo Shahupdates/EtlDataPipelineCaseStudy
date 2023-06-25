@@ -5,8 +5,8 @@
 This repository contains two different ETL (Extract, Transform, Load) pipelines for processing blockchain transaction data from the Solana Blockchain. This project's objective is to build a robust, scalable ETL pipeline to extract data from Solana Blockchain, transform it based on specific business rules, and load it into a PostgreSQL database. The README file explains how to set up and run the project, as does the part2andpart3.md file, which includes troubleshooting, and a retrospect viewpoint.
 
 # Future updates:
-* Add the optional aggregated tables
-* Extract more data from the etl pipeline version
+* ~~Add the optional aggregated tables - DONE~~
+* ~~Extract more data from the etl pipeline version~~
 
 ## GUI Updates (beta, not release):
 * Stop Functionality: a "Stop" button has been integrated into the interface. This feature provides the ability to halt the ETL pipeline execution at any point. This enhancement is particularly useful when needing to pause data extraction or transformation without closing the application entirely.
@@ -19,12 +19,61 @@ Design, develop, optimize, and troubleshoot a big data ETL (Extract, Transform, 
 
 ### Prerequisites
 Before running this ETL pipeline, ensure that you have the following dependencies installed:
+
 - Python (version 3.7+)
-- PostgreSQL
-- Pyspark
+- PostgreSQL (version 15.3)
+- Pyspark (version 3.4.1)
 - dbt (version 0.16.0)
-- Access to Solana Blockchain Nodes
-- Optional : A Unix-like system with `bash` or `sh` to run shell commands
+- Access to Solana Blockchain Nodes: `https://api.mainnet-beta.solana.com` and `https://api-mainnet.magiceden.dev/v2/wallets/{}/tokens`
+
+All of the required dependencies and their versions are as follows, can be installed via: `pip install -r requirements.txt`.
+```
+- aiohttp==3.8.4
+- aiosignal==1.3.1
+- anyio==3.7.0
+- async-timeout==4.0.2
+- attrs==23.1.0
+- bcrypt==4.0.1
+- cachetools==4.2.4
+- certifi==2023.5.7
+- cffi==1.15.1
+- charset-normalizer==3.1.0
+- construct==2.10.68
+- construct-typing==0.5.6
+- cryptography==41.0.1
+- exceptiongroup==1.1.1
+- flake8==6.0.0
+- frozenlist==1.3.3
+- h11==0.14.0
+- httpcore==0.16.3
+- httpx==0.23.3
+- idna==3.4
+- Jinja2==3.1.2
+- jsonalias==0.1.1
+- MarkupSafe==2.1.3
+- mccabe==0.7.0
+- multidict==6.0.4
+- paramiko==3.2.0
+- psycopg2==2.9.6
+- publickey==0.2
+- py4j==0.10.9.7
+- pycodestyle==2.10.0
+- pycparser==2.21
+- pyflakes==3.0.1
+- PyNaCl==1.5.0
+- pyspark==3.4.1
+- PyYAML==6.0
+- requests==2.31.0
+- rfc3986==1.5.0
+- sniffio==1.3.0
+- solana==0.30.2
+- solders==0.18.1
+- types-cachetools==4.2.10
+- typing-extensions==4.6.3
+- urllib3==2.0.3
+- websockets==11.0.3
+- yarl==1.9.2
+```
 
 ### Project Structure
 * `extract_data.py`: The Python script that implements the ETL pipeline.
