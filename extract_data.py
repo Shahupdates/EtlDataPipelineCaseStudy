@@ -7,6 +7,7 @@ import datetime
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, row_number, to_timestamp
 from pyspark.sql.window import Window
+from collections import defaultdict
 
 url = "https://api.mainnet-beta.solana.com"
 headers = {"Content-Type": "application/json"}
@@ -31,6 +32,7 @@ ignored_accounts = set([
     '11111111111111111111111111111111'
 ])
 
+magic_nfts_cache = defaultdict(list)
 
 async def get_block(slot):
     print(f"Getting block for slot: {slot}")
@@ -54,14 +56,18 @@ async def get_block(slot):
                 message = transaction['transaction']['message']
                 meta = transaction['meta']
                 tasks = []
+                future_to_index = {}
                 for i, account in enumerate(message['accountKeys']):
                     if account not in ignored_accounts:  # Exclude ignored accounts
                         print(f"Checking Magic Eden NFTs for account {account}")
-                        tasks.append(get_magic_nfts_async(i, account))
+                        task = asyncio.create_task(get_magic_nfts_async(account))
+                        tasks.append(task)
+                        future_to_index[task] = i
                 for future in asyncio.as_completed(tasks):
-                    i, magic_nfts = await future
+                    i = future_to_index[future]
+                    account = message['accountKeys'][i]
+                    magic_nfts = await future
                     if magic_nfts:
-                        account = message['accountKeys'][i]
                         print(f"Finished checking Magic Eden NFTs for account {account}")
                         pre_balance = meta['preBalances'][i]
                         post_balance = meta['postBalances'][i]
@@ -76,18 +82,17 @@ async def get_block(slot):
                         }
                         transactions_list.append(transaction_dict)  # Add the dictionary to the list
                         load_data([transaction_dict])  # Load data immediately
-            return transactions_list, result.get('blockTime')
+            return transactions_list, result.get('blockTime'), result.get('parentSlot')  # Return parentSlot
         else:
             print("Error: No 'result' key found in the response.")
             print(response_data)
-            return None, None
+            return None, None, None  # Return None for parentSlot
     except KeyError as e:
         print("Error: KeyError -", e)
-        return None, None
+        return None, None, None  # Return None for parentSlot
     except Exception as e:
         print("Error:", e)
-        return None, None
-
+        return None, None, None  # Return None for parentSlot
 
 
 def get_latest_blockhash():
@@ -126,8 +131,6 @@ def get_magic_nfts(address):
             return [tokens.get('token')]
     return None
 
-
-magic_nfts_cache = {}
 
 async def get_magic_nfts_async(address):
     # If address already checked, fetch the response from cache
@@ -188,16 +191,22 @@ def run_dbt_transformation():
 async def main():
     print("Getting latest block...")
     latest_block = get_latest_blockhash()
-    if latest_block is not None:
-        print("Got latest block", latest_block)
-        print("Getting transactions for block...")
-        transactions, _ = await get_block(latest_block)
-        if transactions is not None:
-            print("Got transactions", transactions)
-            print("Loading data...")
-            load_data(transactions)
-            print("Running dbt transformation...")
-            run_dbt_transformation()
+    parent_block = latest_block
+    for _ in range(100):  # Process 100 blocks for demo, replace with a suitable stopping condition
+        if parent_block is not None:
+            print("Got block", parent_block)
+            print("Getting transactions for block...")
+            transactions, _, parent_block = await get_block(parent_block)  # Use the returned parentSlot
+            if transactions is not None:
+                print("Got transactions", transactions)
+                print("Loading data...")
+                load_data(transactions)
+                print("Running dbt transformation...")
+                run_dbt_transformation()
+            else:
+                break  # Stop if no transactions are returned
+        else:
+            break  # Stop if no parent block is returned
 
     print("Stopping spark...")
     spark.stop()
