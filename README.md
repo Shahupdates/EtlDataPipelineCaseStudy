@@ -34,7 +34,7 @@ The script extract_data.py contains two functions for extracting data:
 4. Configure the PostgreSQL connection in the profiles.yml file located in the .dbt directory here:
 ``` C:\users\<username>\.dbt\profiles.yaml```
 5. Modify the `dev` section with your PostgreSQL credentials.
-
+```
 dev:
   target: dev
   outputs:
@@ -55,17 +55,17 @@ dev:
 ### Configuration
 The configuration for the ETL pipeline is defined in the dbt_project.yml file. It specifies the project name, version, and model settings. Modify the file according to your specific requirements.
 
-```
+```python
 name: 'transform_data'
 version: '1.0.0'
 profile: 'dev'
 
-# Configuring directories
+## Configuring directories
 source-paths: ["models"]
 target-path: "target"
 clean-targets: ["target"]
 
-# Configuring models
+## Configuring models
 models:
   transform_data:
     materialized: view
