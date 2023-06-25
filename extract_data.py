@@ -7,7 +7,6 @@ import datetime
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, row_number, to_timestamp
 from pyspark.sql.window import Window
-from collections import defaultdict
 
 url = "https://api.mainnet-beta.solana.com"
 headers = {"Content-Type": "application/json"}
@@ -32,7 +31,6 @@ ignored_accounts = set([
     '11111111111111111111111111111111'
 ])
 
-magic_nfts_cache = defaultdict(list)
 
 async def get_block(slot):
     print(f"Getting block for slot: {slot}")
@@ -56,18 +54,14 @@ async def get_block(slot):
                 message = transaction['transaction']['message']
                 meta = transaction['meta']
                 tasks = []
-                future_to_index = {}
                 for i, account in enumerate(message['accountKeys']):
                     if account not in ignored_accounts:  # Exclude ignored accounts
                         print(f"Checking Magic Eden NFTs for account {account}")
-                        task = asyncio.create_task(get_magic_nfts_async(account))
-                        tasks.append(task)
-                        future_to_index[task] = i
+                        tasks.append(get_magic_nfts_async(i, account))
                 for future in asyncio.as_completed(tasks):
-                    i = future_to_index[future]
-                    account = message['accountKeys'][i]
-                    magic_nfts = await future
+                    i, magic_nfts = await future
                     if magic_nfts:
+                        account = message['accountKeys'][i]
                         print(f"Finished checking Magic Eden NFTs for account {account}")
                         pre_balance = meta['preBalances'][i]
                         post_balance = meta['postBalances'][i]
@@ -93,6 +87,7 @@ async def get_block(slot):
     except Exception as e:
         print("Error:", e)
         return None, None
+
 
 
 def get_latest_blockhash():
@@ -132,11 +127,12 @@ def get_magic_nfts(address):
     return None
 
 
+magic_nfts_cache = {}
 
-async def get_magic_nfts_async(address):
+async def get_magic_nfts_async(i, address):
     # If address already checked, fetch the response from cache
     if address in magic_nfts_cache:
-        return magic_nfts_cache[address]
+        return i, magic_nfts_cache[address]
 
     magic_endpoint = f"https://api-mainnet.magiceden.dev/v2/wallets/{address}/tokens"
     async with aiohttp.ClientSession() as session:
@@ -147,15 +143,15 @@ async def get_magic_nfts_async(address):
                 if isinstance(tokens, list) and tokens:
                     magic_nfts_cache[address] = [token.get('token') for token in tokens]
                     print(f"Magic Eden NFT(s) found for account {address}.")
-                    return magic_nfts_cache[address]
+                    return i, magic_nfts_cache[address]
                 elif isinstance(tokens, dict) and tokens.get('token'):
                     magic_nfts_cache[address] = [tokens.get('token')]
                     print(f"Magic Eden NFT found for account {address}.")
-                    return magic_nfts_cache[address]
+                    return i, magic_nfts_cache[address]
 
                 # Store negative response in cache
                 magic_nfts_cache[address] = None
-    return None
+    return i, None
 
 """
 def transform_data(data):
