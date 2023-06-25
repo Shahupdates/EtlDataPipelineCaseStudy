@@ -89,18 +89,15 @@ def get_latest_blockhash():
         print("Error:", e)
         return None
 
-
 def get_magic_nfts(address):
-    magic_endpoint = "https://api-mainnet.magiceden.dev/v2/wallets/{}/tokens"
+    magic_endpoint = "https://api-mainnet.magiceden.io/rpc/wallet/list_v2?walletAddress={}"
     magic_response = requests.get(magic_endpoint.format(address))
     if magic_response.status_code == 200:
-        tokens = magic_response.json()
+        response_data = magic_response.json()
+        tokens = response_data.get('data', [])
         if isinstance(tokens, list):
             return [token.get('token') for token in tokens]
-        elif isinstance(tokens, dict):
-            return [tokens.get('token')]
     return None
-
 """
 def transform_data(data):
     print(data[:5])  # print the first 5 items
