@@ -22,17 +22,17 @@ Before running this ETL pipeline, ensure that you have the following dependencie
 3. Install the required Python dependencies: `pip install -r requirements.txt`
 4. Configure the PostgreSQL connection in the profiles.yml file located in the .dbt directory. Modify the `dev` section with your PostgreSQL credentials.
 ```
-default:
+dev:
+  target: dev
   outputs:
     dev:
       type: postgres
-      host: 127.0.0.2
+      host: 127.0.0.1
       port: 5432
       user: postgres
       pass: postgres
-      dbname: postgres
-      schema: myschema
-  target: dev
+      dbname: main_database
+      schema: public
 ```
 6. Run the extraction script: `python extract_data.py`
 7. Apply transformations using dbt: `dbt run --models transform`
@@ -42,28 +42,19 @@ default:
 ### Configuration
 The configuration for the ETL pipeline is defined in the dbt_project.yml file. It specifies the project name, version, and model settings. Modify the file according to your specific requirements.
 ```
-name: 'my_new_project'
+name: 'transform_data'
 version: '1.0.0'
+profile: 'dev'
 
-profile: 'default'
-
+# Configuring directories
 source-paths: ["models"]
-analysis-paths: ["analysis"]
-test-paths: ["tests"]
-data-paths: ["data"]
-macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
-
 target-path: "target"
-clean-targets:
-  - "target"
-  - "dbt_modules"
+clean-targets: ["target"]
 
+# Configuring models
 models:
-  my_new_project:
-    enabled: true
+  transform_data:
     materialized: view
-    sql: models/transform/transformation.sql
 ```
 ## Python-only ETL Pipeline
 
