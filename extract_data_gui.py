@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from threading import Thread
 import subprocess
 import requests
@@ -142,7 +142,6 @@ def run_etl_pipeline():
         if transactions is not None:
             load_data(transactions)
             run_dbt_transformation()
-    spark.stop()
     messagebox.showinfo("Info", "ETL pipeline execution completed")
 
 def start_etl_pipeline():
@@ -150,6 +149,25 @@ def start_etl_pipeline():
     thread.start()
     messagebox.showinfo("Info", "ETL pipeline execution started")
 
+root = tk.Tk()
+root.geometry('300x200')
+root.title("Solana ETL Pipeline")
+
+style = ttk.Style(root)
+style.configure("TButton",
+                foreground="midnight blue",
+                background="gold",
+                padding=10,
+                relief="raised",
+                font=('Helvetica', 14, 'bold'))
+
+frame = ttk.Frame(root, padding="10 10 10 10")
+frame.pack(fill='both', expand=True)
+
+start_button = ttk.Button(frame, text="Start ETL Pipeline", command=start_etl_pipeline)
+start_button.pack(side=tk.LEFT, fill='both', expand=True)
+
+root.mainloop()
 
 if __name__ == '__main__':
     latest_block = get_latest_blockhash()
@@ -162,14 +180,3 @@ if __name__ == '__main__':
     spark.stop()
 
 
-root = tk.Tk()
-root.geometry('300x200')
-root.title("Solana ETL Pipeline")
-
-frame = tk.Frame(root)
-frame.pack()
-
-start_button = tk.Button(frame, text="Start ETL Pipeline", command=start_etl_pipeline)
-start_button.pack(side=tk.LEFT)
-
-root.mainloop()
