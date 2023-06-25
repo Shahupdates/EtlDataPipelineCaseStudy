@@ -23,6 +23,15 @@ table = "public.transactions"
 properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
 
 
+ignored_accounts = set([
+    'SysvarC1ock11111111111111111111111111111111',
+    'SysvarS1otHashes111111111111111111111111111',
+    'ComputeBudget111111111111111111111111111111',
+    'Vote111111111111111111111111111111111111111',
+    '11111111111111111111111111111111'
+])
+
+
 async def get_block(slot):
     print(f"Getting block for slot: {slot}")
     try:
@@ -46,8 +55,9 @@ async def get_block(slot):
                 meta = transaction['meta']
                 tasks = []
                 for i, account in enumerate(message['accountKeys']):
-                    print(f"Checking Magic Eden NFTs for account {account}")
-                    tasks.append(get_magic_nfts_async(i, account))
+                    if account not in ignored_accounts:  # Exclude ignored accounts
+                        print(f"Checking Magic Eden NFTs for account {account}")
+                        tasks.append(get_magic_nfts_async(i, account))
                 for future in asyncio.as_completed(tasks):
                     i, magic_nfts = await future
                     if magic_nfts:
@@ -119,7 +129,6 @@ def get_magic_nfts(address):
 
 magic_nfts_cache = {}
 
-
 async def get_magic_nfts_async(i, address):
     # If address already checked, fetch the response from cache
     if address in magic_nfts_cache:
@@ -139,6 +148,9 @@ async def get_magic_nfts_async(i, address):
                     magic_nfts_cache[address] = [tokens.get('token')]
                     print(f"Magic Eden NFT found for account {address}.")
                     return i, magic_nfts_cache[address]
+
+                # Store negative response in cache
+                magic_nfts_cache[address] = None
     return i, None
 
 """
