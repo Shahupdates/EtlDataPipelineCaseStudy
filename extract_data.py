@@ -188,6 +188,36 @@ def run_dbt_transformation():
     command = "dbt run --models +transformations.transform_data"
     subprocess.run(command, shell=True)
 
+def calculate_dau(df):
+    df.createOrReplaceTempView("transactions")
+
+    dau_df = spark.sql("""
+    SELECT 
+        DATE(timestamp) as date,
+        COUNT(DISTINCT address) as active_users
+    FROM transactions
+    GROUP BY DATE(timestamp)
+    """)
+
+    # Write to a new table called "daily_active_users"
+    dau_df.write.jdbc(url=jdbcUrl, table="public.daily_active_users", mode="overwrite", properties=properties)
+    print('DAU Data loaded successfully.')
+
+def calculate_daily_transaction_volume(df):
+    df.createOrReplaceTempView("transactions")
+
+    dtv_df = spark.sql("""
+    SELECT 
+        DATE(timestamp) as date,
+        SUM(amount_sol) as transaction_volume
+    FROM transactions
+    GROUP BY DATE(timestamp)
+    """)
+
+    # Write to a new table called "daily_transaction_volume"
+    dtv_df.write.jdbc(url=jdbcUrl, table="public.daily_transaction_volume", mode="overwrite", properties=properties)
+    print('Daily transaction volume data loaded successfully.')
+
 async def main():
     print("Getting latest block...")
     latest_block = get_latest_blockhash()
@@ -199,9 +229,16 @@ async def main():
             print("Got transactions", transactions)
             print("Loading data...")
             load_data(transactions)
+            
+            print("Calculating daily active users...")
+            calculate_dau(deduplicated_df)
+    
+            print("Calculating daily transaction volume...")
+            calculate_daily_transaction_volume(deduplicated_df)
+    
             print("Running dbt transformation...")
             run_dbt_transformation()
-
+    
     print("Stopping spark...")
     spark.stop()
 
