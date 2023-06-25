@@ -1,4 +1,5 @@
-# Solana ETL Pipeline
+# Solana ETL Pipeline 
+To-Do: Add aggregated tables if I have time to revisit this before its looked at the interviewer.
 
 This repository contains two different ETL (Extract, Transform, Load) pipelines for processing blockchain transaction data from the Solana Blockchain. This project's objective is to build a robust, scalable ETL pipeline to extract data from Solana Blockchain, transform it based on specific business rules, and load it into a PostgreSQL database. The README file explains how to set up and run the project, as does the part2andpart3.md file, which includes troubleshooting, and a retrospect viewpoint.
 
@@ -28,13 +29,14 @@ The script extract_data.py contains two functions for extracting data:
 * `get_latest_blockhash()`: This function fetches the latest blockhash from Solana Blockchain.
   
 ### Setup and Usage
-1. Clone the repository to your local machine: `git clone https://github.com/shahupdates/etldatapipelinecasestudy
+1. Clone the repository to your local machine: `git clone https://github.com/shahupdates/etldatapipelinecasestudy`
 2. Navigate to the project directory: `cd etlpipeline`
 3. Install the required Python dependencies: `pip install -r requirements.txt`
-4. Configure the PostgreSQL connection in the profiles.yml file located in the .dbt directory here:
+4. Configure the PostgreSQL connection in the profiles.yml file located in the .dbt directory below. If you don't have it, just create it and the subsequent profiles.yaml.
 ``` C:\users\<username>\.dbt\profiles.yaml```
-5. Modify the `dev` section with your PostgreSQL credentials.
-```
+6. Modify the `dev` section with your PostgreSQL credentials.
+
+```yaml
 dev:
   target: dev
   outputs:
@@ -47,6 +49,7 @@ dev:
       dbname: main_database
       schema: public
 ```
+
 6. Run the extraction script: `python extract_data.py`
 7. Apply transformations using dbt: `dbt run --models transform`
 8. Load the transformed data into PostgreSQL: `dbt run --models load`
