@@ -1,6 +1,8 @@
+import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 from threading import Thread
+from contextlib import redirect_stdout
 import subprocess
 import requests
 import json
@@ -135,23 +137,50 @@ def run_dbt_transformation():
     command = "dbt run --models +transformations.transform_data"
     subprocess.run(command, shell=True)
 
+def print_to_console(text):
+    console.insert(tk.END, str(text) + '\n')
+    console.see(tk.END)  # Auto-scroll to the end
+
+class IORedirector(object):
+    def __init__(self, text_area):
+        self.text_area = text_area
+
+class StdoutRedirector(IORedirector):
+    def write(self, str):
+        self.text_area.insert(tk.END, str)
+        self.text_area.see(tk.END)  # Auto-scroll to the end
+
+    def flush(self):
+        pass
+
 def run_etl_pipeline():
+    print("ETL pipeline execution started")
     latest_block = get_latest_blockhash()
     if latest_block is not None:
         transactions, _ = get_block(latest_block)
         if transactions is not None:
             load_data(transactions)
             run_dbt_transformation()
-    messagebox.showinfo("Info", "ETL pipeline execution completed")
+    print("ETL pipeline execution completed")
 
 def start_etl_pipeline():
+    global thread
     thread = Thread(target=run_etl_pipeline)
     thread.start()
-    messagebox.showinfo("Info", "ETL pipeline execution started")
+
+def stop_etl_pipeline():
+    if thread.is_alive():
+        print("Stopping ETL pipeline...")
+        spark.stop()  # Assume spark is a globally available SparkSession
+        thread.join()
+        print("ETL pipeline stopped")
 
 root = tk.Tk()
-root.geometry('300x200')
+root.geometry('600x400')
 root.title("Solana ETL Pipeline")
+
+frame = ttk.Frame(root, padding="10 10 10 10")
+frame.pack(fill='both', expand=True)
 
 style = ttk.Style(root)
 style.configure("TButton",
@@ -161,11 +190,16 @@ style.configure("TButton",
                 relief="raised",
                 font=('Helvetica', 14, 'bold'))
 
-frame = ttk.Frame(root, padding="10 10 10 10")
-frame.pack(fill='both', expand=True)
-
 start_button = ttk.Button(frame, text="Start ETL Pipeline", command=start_etl_pipeline)
 start_button.pack(side=tk.LEFT, fill='both', expand=True)
+
+stop_button = ttk.Button(frame, text="Stop ETL Pipeline", command=stop_etl_pipeline)
+stop_button.pack(side=tk.LEFT, fill='both', expand=True)
+
+console = tk.Text(frame)
+console.pack(fill='both', expand=True)
+
+sys.stdout = StdoutRedirector(console)
 
 root.mainloop()
 
