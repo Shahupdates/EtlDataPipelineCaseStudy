@@ -1,4 +1,6 @@
 # Solana ETL Pipeline 
+![f0022f9532b46ddfdf519d3286dacb9f](https://github.com/Shahupdates/EtlDataPipelineCaseStudy/assets/120000782/e9f27e7d-2467-4cde-92f0-3e31d33371bf)
+
 To-Do: Add aggregated tables if I have time to revisit this before its looked at the interviewer.
 
 This repository contains two different ETL (Extract, Transform, Load) pipelines for processing blockchain transaction data from the Solana Blockchain. This project's objective is to build a robust, scalable ETL pipeline to extract data from Solana Blockchain, transform it based on specific business rules, and load it into a PostgreSQL database. The README file explains how to set up and run the project, as does the part2andpart3.md file, which includes troubleshooting, and a retrospect viewpoint.
