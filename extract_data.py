@@ -22,7 +22,6 @@ jdbcUrl = "jdbc:postgresql://localhost/main_database"
 table = "public.transactions"
 properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
 
-
 ignored_accounts = set([
     'SysvarC1ock11111111111111111111111111111111',
     'SysvarS1otHashes111111111111111111111111111',
@@ -39,7 +38,8 @@ async def get_block(slot):
             "jsonrpc": "2.0",
             "id": 1,
             "method": "getBlock",
-            "params": [slot, {"encoding": "json", "transactionDetails": "full", "rewards": False, "maxSupportedTransactionVersion": 0}]
+            "params": [slot, {"encoding": "json", "transactionDetails": "full", "rewards": False,
+                              "maxSupportedTransactionVersion": 0}]
         }
         print(f"Sending request to: {url}")
         response = requests.post(url, headers=headers, data=json.dumps(payload))
@@ -92,7 +92,6 @@ async def get_block(slot):
         return None, None
 
 
-
 def get_latest_blockhash():
     try:
         payload = {
@@ -132,6 +131,7 @@ def get_magic_nfts(address):
 
 magic_nfts_cache = {}
 
+
 async def get_magic_nfts_async(i, address):
     # If address already checked, fetch the response from cache
     if address in magic_nfts_cache:
@@ -156,6 +156,7 @@ async def get_magic_nfts_async(i, address):
                 magic_nfts_cache[address] = None
     return i, None
 
+
 """
 def transform_data(data):
     print(data[:5])  # print the first 5 items
@@ -171,6 +172,7 @@ def transform_data(data):
     return filtered_data
 """
 
+
 def load_data(data):
     df = spark.createDataFrame(data, ["address", "amount", "amount_sol", "timestamp"])
 
@@ -179,44 +181,43 @@ def load_data(data):
 
     # Deduplicate the data based on the address and timestamp columns
     window = Window.partitionBy("address", "timestamp").orderBy(col("amount").desc())
-    deduplicated_df = df.withColumn("row_number", row_number().over(window)).where(col("row_number") == 1).drop("row_number")
+    deduplicated_df = df.withColumn("row_number", row_number().over(window)).where(col("row_number") == 1).drop(
+        "row_number")
 
     deduplicated_df.write.jdbc(url=jdbcUrl, table=table, mode="append", properties=properties)
     print('Data loaded successfully.')
+
 
 def run_dbt_transformation():
     command = "dbt run --models +transformations.transform_data"
     subprocess.run(command, shell=True)
 
+
 def calculate_dau(df):
     df.createOrReplaceTempView("transactions")
-
-    dau_df = spark.sql("""
-    SELECT 
-        DATE(timestamp) as date,
-        COUNT(DISTINCT address) as active_users
-    FROM transactions
-    GROUP BY DATE(timestamp)
+    dau = spark.sql("""
+        SELECT
+            date(timestamp) AS date,
+            count(distinct address) AS dau
+        FROM transactions
+        GROUP BY date(timestamp)
     """)
+    dau.write.jdbc(url=jdbcUrl, table="public.daily_active_users", mode="overwrite", properties=properties)
+    print('Daily active users data loaded successfully.')
 
-    # Write to a new table called "daily_active_users"
-    dau_df.write.jdbc(url=jdbcUrl, table="public.daily_active_users", mode="overwrite", properties=properties)
-    print('DAU Data loaded successfully.')
 
 def calculate_daily_transaction_volume(df):
     df.createOrReplaceTempView("transactions")
-
-    dtv_df = spark.sql("""
-    SELECT 
-        DATE(timestamp) as date,
-        SUM(amount_sol) as transaction_volume
-    FROM transactions
-    GROUP BY DATE(timestamp)
+    daily_tx_volume = spark.sql("""
+        SELECT
+            date(timestamp) AS date,
+            sum(amount_sol) AS daily_tx_volume
+        FROM transactions
+        GROUP BY date(timestamp)
     """)
-
-    # Write to a new table called "daily_transaction_volume"
-    dtv_df.write.jdbc(url=jdbcUrl, table="public.daily_transaction_volume", mode="overwrite", properties=properties)
+    daily_tx_volume.write.jdbc(url=jdbcUrl, table="public.daily_transaction_volume", mode="overwrite", properties=properties)
     print('Daily transaction volume data loaded successfully.')
+
 
 async def main():
     print("Getting latest block...")
@@ -229,18 +230,19 @@ async def main():
             print("Got transactions", transactions)
             print("Loading data...")
             load_data(transactions)
-            
+
             print("Calculating daily active users...")
             calculate_dau(deduplicated_df)
-    
+
             print("Calculating daily transaction volume...")
             calculate_daily_transaction_volume(deduplicated_df)
-    
+
             print("Running dbt transformation...")
             run_dbt_transformation()
-    
+
     print("Stopping spark...")
     spark.stop()
+
 
 if __name__ == '__main__':
     asyncio.run(main())
