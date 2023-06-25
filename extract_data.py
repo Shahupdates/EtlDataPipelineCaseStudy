@@ -1,8 +1,10 @@
+import subprocess
+
 import requests
 import json
 import datetime
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, row_number
+from pyspark.sql.functions import col, row_number, to_timestamp
 from pyspark.sql.window import Window
 
 url = "https://api.mainnet-beta.solana.com"
@@ -18,8 +20,6 @@ spark = SparkSession.builder \
 jdbcUrl = "jdbc:postgresql://localhost/main_database"
 table = "public.transactions"
 properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
-
-
 
 
 def get_block(slot):
@@ -101,6 +101,7 @@ def get_magic_nfts(address):
             return [tokens.get('token')]
     return None
 
+"""
 def transform_data(data):
     print(data[:5])  # print the first 5 items
     filtered_data = [
@@ -113,24 +114,31 @@ def transform_data(data):
         if datetime.datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S') > datetime.datetime.now() - datetime.timedelta(days=365 * 2)
     ]
     return filtered_data
-
+"""
 
 def load_data(data):
     df = spark.createDataFrame(data, ["address", "amount", "timestamp"])
 
-    # Remove duplicates based on the address and timestamp columns
-    deduplicated_df = df.dropDuplicates(["address", "timestamp"])
+    # Cast the timestamp column to the appropriate data type
+    df = df.withColumn("timestamp", to_timestamp(col("timestamp")))
+
+    # Deduplicate the data based on the address and timestamp columns
+    window = Window.partitionBy("address", "timestamp").orderBy(col("amount").desc())
+    deduplicated_df = df.withColumn("row_number", row_number().over(window)).where(col("row_number") == 1).drop("row_number")
 
     deduplicated_df.write.jdbc(url=jdbcUrl, table=table, mode="append", properties=properties)
     print('Data loaded successfully.')
 
+def run_dbt_transformation():
+    command = "dbt run --models +transformations.transform_data"
+    subprocess.run(command, shell=True)
 
 if __name__ == '__main__':
     latest_block = get_latest_blockhash()
     if latest_block is not None:
         transactions, _ = get_block(latest_block)
         if transactions is not None:
-            data = transform_data(transactions)
-            load_data(data)
+            load_data(transactions)
+            run_dbt_transformation()
 
     spark.stop()
