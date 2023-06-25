@@ -181,11 +181,13 @@ def load_data(data):
 
     # Deduplicate the data based on the address and timestamp columns
     window = Window.partitionBy("address", "timestamp").orderBy(col("amount").desc())
-    deduplicated_df = df.withColumn("row_number", row_number().over(window)).where(col("row_number") == 1).drop(
-        "row_number")
+    deduplicated_df = df.withColumn("row_number", row_number().over(window)).where(col("row_number") == 1).drop("row_number")
 
     deduplicated_df.write.jdbc(url=jdbcUrl, table=table, mode="append", properties=properties)
     print('Data loaded successfully.')
+
+    # Return the deduplicated dataframe
+    return deduplicated_df
 
 
 def run_dbt_transformation():
@@ -229,7 +231,7 @@ async def main():
         if transactions is not None:
             print("Got transactions", transactions)
             print("Loading data...")
-            load_data(transactions)
+            deduplicated_df = load_data(transactions)
 
             print("Calculating daily active users...")
             calculate_dau(deduplicated_df)
