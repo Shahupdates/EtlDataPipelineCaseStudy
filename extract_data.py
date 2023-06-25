@@ -44,8 +44,9 @@ def get_block(slot):
                 message = transaction['transaction']['message']
                 meta = transaction['meta']
                 for i, account in enumerate(message['accountKeys']):
-                    # Check if the account has Magic Eden NFTs
+                    print(f"Checking Magic Eden NFTs for account {account}")
                     magic_nfts = get_magic_nfts(account)
+                    print(f"Finished checking Magic Eden NFTs for account {account}")
                     if magic_nfts:
                         pre_balance = meta['preBalances'][i]
                         post_balance = meta['postBalances'][i]
