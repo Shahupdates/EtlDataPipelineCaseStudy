@@ -78,6 +78,20 @@ source-paths: ["models"]
 target-path: "target"
 clean-targets: ["target"]
 
+Note:
+```To enable your script to take a contract address as a variable and apply it to different contract addresses, 
+you can uncomment these lines (a global variable for the contract address and use that in your transaction analysis.) 
+                               
+# Global variable for contract address
+contract_address = 'YourContractAddressHere'
+
+# Then, modify the if statement within the get_block function
+if account not in ignored_accounts and account == contract_address:
+
+```
+
+
+
 ## Configuring models
 models:
   transform_data:
