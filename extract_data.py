@@ -23,6 +23,7 @@ properties = {"user": "postgres", "password": "postgres", "driver": "org.postgre
 
 
 def get_block(slot):
+    print(f"Getting block for slot: {slot}")
     try:
         payload = {
             "jsonrpc": "2.0",
@@ -30,8 +31,11 @@ def get_block(slot):
             "method": "getBlock",
             "params": [slot, {"encoding": "json", "transactionDetails": "full", "rewards": False, "maxSupportedTransactionVersion": 0}]
         }
+        print(f"Sending request to: {url}")
         response = requests.post(url, headers=headers, data=json.dumps(payload))
+        print(f"Received response: {response.status_code}")
         response_data = response.json()
+        print(f"Response data: {response_data}")
         transactions_list = []  # List to hold all transactions
         if 'result' in response_data:
             result = response_data['result']
@@ -66,6 +70,7 @@ def get_block(slot):
     except Exception as e:
         print("Error:", e)
         return None, None
+
 
 
 def get_latest_blockhash():
