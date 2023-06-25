@@ -7,21 +7,11 @@ This repository contains two different ETL (Extract, Transform, Load) pipelines 
 # Future updates:
 * Add the optional aggregated tables
 * Extract more data from the etl pipeline version
-* Finish the gui
 
-## GUI Updates
-
-### Stop Functionality
-
-In response to user feedback, a "Stop" button has been integrated into the interface. This feature provides the ability to halt the ETL pipeline execution at any point. This enhancement is particularly useful when needing to pause data extraction or transformation without closing the application entirely.
-
-### Console Logging
-
-The GUI now includes a dedicated console log section. This new feature emulates the console output, delivering live updates about the ETL pipeline progression. With this integration, users can stay informed about the status of the data extraction, transformation, and loading processes in real-time.
-
-### Future Improvements
-
-Looking forward, there are plans to display transactions directly from the database on the GUI. This addition would offer an immediate view of the extracted data, eliminating the need for separate database access.
+## GUI Updates (beta, not release):
+* Stop Functionality: a "Stop" button has been integrated into the interface. This feature provides the ability to halt the ETL pipeline execution at any point. This enhancement is particularly useful when needing to pause data extraction or transformation without closing the application entirely.
+* Console Logging: * the GUI now includes a dedicated console log section. This new feature emulates the console output, delivering live updates about the ETL pipeline progression. 
+* Future Improvements: Looking forward, there are plans to display transactions directly from the database on the GUI. This addition would offer an immediate view of the extracted data, eliminating the need for separate database access.
 
 # ETL Pipeline using dbt, Apache Spark, Python, and PostgreSQL
 ## Objective
@@ -30,7 +20,7 @@ Design, develop, optimize, and troubleshoot a big data ETL (Extract, Transform, 
 ### Prerequisites
 Before running this ETL pipeline, ensure that you have the following dependencies installed:
 - Python (version 3.7+)
-- PostgreSQL ()
+- PostgreSQL
 - Pyspark
 - dbt (version 0.16.0)
 - Access to Solana Blockchain Nodes
