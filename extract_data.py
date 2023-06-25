@@ -48,8 +48,8 @@ async def get_block(slot):
                 for i, account in enumerate(message['accountKeys']):
                     print(f"Checking Magic Eden NFTs for account {account}")
                     tasks.append(get_magic_nfts_async(account))
-                magic_nfts_list = await asyncio.gather(*tasks)
-                for i, magic_nfts in enumerate(magic_nfts_list):
+                for future in asyncio.as_completed(tasks):
+                    i, magic_nfts = await future
                     if magic_nfts:
                         account = message['accountKeys'][i]
                         print(f"Finished checking Magic Eden NFTs for account {account}")
@@ -65,6 +65,7 @@ async def get_block(slot):
                             'timestamp': datetime.datetime.fromtimestamp(result['blockTime']).strftime('%Y-%m-%d %H:%M:%S')
                         }
                         transactions_list.append(transaction_dict)  # Add the dictionary to the list
+                        load_data([transaction_dict])  # Load data immediately
             return transactions_list, result.get('blockTime')
         else:
             print("Error: No 'result' key found in the response.")
@@ -115,7 +116,7 @@ def get_magic_nfts(address):
             return [tokens.get('token')]
     return None
 
-async def get_magic_nfts_async(address):
+async def get_magic_nfts_async(i, address):
     magic_endpoint = f"https://api-mainnet.magiceden.dev/v2/wallets/{address}/tokens"
     async with aiohttp.ClientSession() as session:
         async with session.get(magic_endpoint) as resp:
@@ -123,11 +124,13 @@ async def get_magic_nfts_async(address):
                 tokens = await resp.json()
                 if isinstance(tokens, list) and tokens:
                     print(f"Magic Eden NFT(s) found for account {address}.")
-                    return [token.get('token') for token in tokens]
+                    return i, [token.get('token') for token in tokens]
                 elif isinstance(tokens, dict) and tokens.get('token'):
                     print(f"Magic Eden NFT found for account {address}.")
-                    return [tokens.get('token')]
-    return None
+                    return i, [tokens.get('token')]
+    return i, None
+
+
 """
 def transform_data(data):
     print(data[:5])  # print the first 5 items
