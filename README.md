@@ -7,6 +7,8 @@ This repository contains two different ETL (Extract, Transform, Load) pipelines 
 # Future updates:
 * ~~Add the optional aggregated tables - DONE~~
 * ~~Extract more data from the etl pipeline version~~
+* Update gui to newest release (fully working with all features)
+* Update other ETL (python-only script) to newest release (fully working with all features)
 
 ## GUI Updates (beta, not release):
 * Stop Functionality: a "Stop" button has been integrated into the interface. This feature provides the ability to halt the ETL pipeline execution at any point. This enhancement is particularly useful when needing to pause data extraction or transformation without closing the application entirely.
