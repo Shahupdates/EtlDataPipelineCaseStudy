@@ -1,0 +1,62 @@
+/* styles.qss */
+
+/* Set the application background color */
+QWidget {
+    background-color: #f2f2f2;
+}
+
+/* Customize the label styles */
+QLabel {
+    color: #555;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Customize the button styles */
+QPushButton {
+    background-color: #2196F3;
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+}
+
+QPushButton:hover {
+    background-color: #1976D2;
+}
+
+QPushButton:pressed {
+    background-color: #0D47A1;
+}
+
+/* Customize the QMessageBox styles */
+QMessageBox {
+    background-color: #fff;
+    color: #555;
+}
+
+QMessageBox QPushButton {
+    background-color: #2196F3;
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #1976D2;
+}
+
+QMessageBox QPushButton:pressed {
+    background-color: #0D47A1;
+}
+
+/* Customize the QStatusBar styles */
+QStatusBar {
+    background-color: #e8e8e8;
+    color: #555;
+    font-size: 14px;
+}
