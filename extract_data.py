@@ -1,5 +1,6 @@
 import subprocess
-
+import aiohttp
+import asyncio
 import requests
 import json
 import datetime
@@ -110,6 +111,19 @@ def get_magic_nfts(address):
             return [tokens.get('token')]
     return None
 
+async def get_magic_nfts_async(address):
+    magic_endpoint = f"https://api-mainnet.magiceden.dev/v2/wallets/{address}/tokens"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(magic_endpoint) as resp:
+            if resp.status == 200:
+                tokens = await resp.json()
+                if isinstance(tokens, list) and tokens:
+                    print(f"Magic Eden NFT(s) found for account {address}.")
+                    return [token.get('token') for token in tokens]
+                elif isinstance(tokens, dict) and tokens.get('token'):
+                    print(f"Magic Eden NFT found for account {address}.")
+                    return [tokens.get('token')]
+    return None
 """
 def transform_data(data):
     print(data[:5])  # print the first 5 items
