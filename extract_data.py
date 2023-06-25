@@ -69,10 +69,13 @@ async def get_block(slot):
                             amount = post_balance - pre_balance  # Receiver
                         else:
                             amount = pre_balance - post_balance  # Sender
+                        amount_sol = amount / 1_000_000_000  # convert lamports to SOL
                         transaction_dict = {
                             'address': account,
                             'amount': amount,
-                            'timestamp': datetime.datetime.fromtimestamp(result['blockTime']).strftime('%Y-%m-%d %H:%M:%S')
+                            'amount_sol': amount_sol,
+                            'timestamp': datetime.datetime.fromtimestamp(result['blockTime']).strftime(
+                                '%Y-%m-%d %H:%M:%S')
                         }
                         transactions_list.append(transaction_dict)  # Add the dictionary to the list
                         load_data([transaction_dict])  # Load data immediately
@@ -169,7 +172,7 @@ def transform_data(data):
 """
 
 def load_data(data):
-    df = spark.createDataFrame(data, ["address", "amount", "timestamp"])
+    df = spark.createDataFrame(data, ["address", "amount", "amount_sol", "timestamp"])
 
     # Cast the timestamp column to the appropriate data type
     df = df.withColumn("timestamp", to_timestamp(col("timestamp")))
