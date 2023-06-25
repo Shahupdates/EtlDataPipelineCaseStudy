@@ -3,7 +3,7 @@
 
 This repository contains two different ETL (Extract, Transform, Load) pipelines for processing blockchain transaction data from the Solana Blockchain. This project's objective is to build a robust, scalable ETL pipeline to extract data from Solana Blockchain, transform it based on specific business rules, and load it into a PostgreSQL database. The README file explains how to set up and run the project, as does the part2andpart3.md file, which includes troubleshooting, and a retrospect viewpoint.
 
-# To-Do if I have time to revisit this before its 'graded'
+# Future updates:
 * Add the optional aggregated tables
 * Extract more data from the etl pipeline version
 * Finish the gui
