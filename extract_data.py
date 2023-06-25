@@ -23,7 +23,7 @@ table = "public.transactions"
 properties = {"user": "postgres", "password": "postgres", "driver": "org.postgresql.Driver"}
 
 
-def get_block(slot):
+async def get_block(slot):
     print(f"Getting block for slot: {slot}")
     try:
         payload = {
@@ -44,11 +44,15 @@ def get_block(slot):
             for transaction in transactions:
                 message = transaction['transaction']['message']
                 meta = transaction['meta']
+                tasks = []
                 for i, account in enumerate(message['accountKeys']):
                     print(f"Checking Magic Eden NFTs for account {account}")
-                    magic_nfts = get_magic_nfts(account)
-                    print(f"Finished checking Magic Eden NFTs for account {account}")
+                    tasks.append(get_magic_nfts_async(account))
+                magic_nfts_list = await asyncio.gather(*tasks)
+                for i, magic_nfts in enumerate(magic_nfts_list):
                     if magic_nfts:
+                        account = message['accountKeys'][i]
+                        print(f"Finished checking Magic Eden NFTs for account {account}")
                         pre_balance = meta['preBalances'][i]
                         post_balance = meta['postBalances'][i]
                         if account in message['instructions'][0]['accounts']:
@@ -156,13 +160,13 @@ def run_dbt_transformation():
     command = "dbt run --models +transformations.transform_data"
     subprocess.run(command, shell=True)
 
-if __name__ == '__main__':
+async def main():
     print("Getting latest block...")
     latest_block = get_latest_blockhash()
     if latest_block is not None:
         print("Got latest block", latest_block)
         print("Getting transactions for block...")
-        transactions, _ = get_block(latest_block)
+        transactions, _ = await get_block(latest_block)
         if transactions is not None:
             print("Got transactions", transactions)
             print("Loading data...")
@@ -172,3 +176,6 @@ if __name__ == '__main__':
 
     print("Stopping spark...")
     spark.stop()
+
+if __name__ == '__main__':
+    asyncio.run(main())
