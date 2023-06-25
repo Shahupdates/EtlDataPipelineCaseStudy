@@ -78,7 +78,9 @@ source-paths: ["models"]
 target-path: "target"
 clean-targets: ["target"]
 ```
-Note: To enable your script to take a contract address as a variable and apply it to different contract addresses, 
+
+### Note: 
+To enable your script to take a contract address as a variable and apply it to different contract addresses, 
 you can uncomment these lines (a global variable for the contract address and use that in your transaction analysis.) 
 
 ```python
