@@ -224,6 +224,21 @@ Make sure to install the `psycopg2` library (`pip install psycopg2`) for Postgre
 For more details on the ETL pipelines, refer to the individual code files and SQL queries. Feel free to explore and customize the pipelines according to your specific requirements.
 
 ## License
+Copyright (C) <Love Shah> - All Rights Reserved.
+
+Individual Proprietary License
+
+This project is licensed under the Individual Proprietary License. All rights reserved.
+
+Unauthorized copying, transferring, or reproduction of the contents of this project, via any medium, is strictly prohibited. The receipt or possession of the source code and/or any parts thereof does not convey or imply any right to use them for any purpose other than the purpose for which they were provided to you.
+
+Permission is hereby granted, free of charge, to the individual recipient of this project to use, copy, modify, merge, publish, distribute, and/or sell copies of this software, subject to the following conditions:
+
+1. The software may not be used, in whole or in part, for any commercial purposes or for the provision of services to third parties.
+2. The software may be sold or transferred only by the original recipient of this project. Selling or transferring the software to any other individual or entity is strictly prohibited.
+3. The software is provided "AS IS," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the software.
 This project is licensed under this license:
 Individual Proprietary License
 
