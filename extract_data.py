@@ -135,11 +135,18 @@ def run_dbt_transformation():
     subprocess.run(command, shell=True)
 
 if __name__ == '__main__':
+    print("Getting latest block...")
     latest_block = get_latest_blockhash()
     if latest_block is not None:
+        print("Got latest block", latest_block)
+        print("Getting transactions for block...")
         transactions, _ = get_block(latest_block)
         if transactions is not None:
+            print("Got transactions", transactions)
+            print("Loading data...")
             load_data(transactions)
+            print("Running dbt transformation...")
             run_dbt_transformation()
 
+    print("Stopping spark...")
     spark.stop()
