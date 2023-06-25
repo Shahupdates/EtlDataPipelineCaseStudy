@@ -47,7 +47,7 @@ async def get_block(slot):
                 tasks = []
                 for i, account in enumerate(message['accountKeys']):
                     print(f"Checking Magic Eden NFTs for account {account}")
-                    tasks.append(get_magic_nfts_async(account))
+                    tasks.append(get_magic_nfts_async(i, account))
                 for future in asyncio.as_completed(tasks):
                     i, magic_nfts = await future
                     if magic_nfts:
@@ -129,7 +129,6 @@ async def get_magic_nfts_async(i, address):
                     print(f"Magic Eden NFT found for account {address}.")
                     return i, [tokens.get('token')]
     return i, None
-
 
 """
 def transform_data(data):
