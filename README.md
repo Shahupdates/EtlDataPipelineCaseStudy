@@ -3,7 +3,6 @@
 This repository contains two different ETL (Extract, Transform, Load) pipelines for processing blockchain transaction data from the Solana Blockchain. This project's objective is to build a robust, scalable ETL pipeline to extract data from Solana Blockchain, transform it based on specific business rules, and load it into a PostgreSQL database. The README file explains how to set up and run the project, as does the part2andpart3.md file, which includes troubleshooting, and a retrospect viewpoint.
 
 # ETL Pipeline using dbt, Apache Spark, Python, and PostgreSQL
-
 ## Objective
 Design, develop, optimize, and troubleshoot a big data ETL (Extract, Transform, Load) pipeline using Python, SQL, DBT, and Spark. The ETL pipeline should extract data from Solana Blockchain nodes, transform it, and load the processed data into PostgreSQL for further analysis.
 
