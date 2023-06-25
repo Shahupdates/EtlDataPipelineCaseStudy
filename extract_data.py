@@ -102,9 +102,13 @@ def get_magic_nfts(address):
     magic_response = requests.get(magic_endpoint.format(address))
     if magic_response.status_code == 200:
         tokens = magic_response.json()
-        if tokens:
-            return True
-    return False
+        if isinstance(tokens, list) and tokens:
+            print(f"Magic Eden NFT(s) found for account {address}.")
+            return [token.get('token') for token in tokens]
+        elif isinstance(tokens, dict) and tokens.get('token'):
+            print(f"Magic Eden NFT found for account {address}.")
+            return [tokens.get('token')]
+    return None
 
 """
 def transform_data(data):
