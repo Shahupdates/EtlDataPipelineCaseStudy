@@ -1,27 +1,41 @@
-# ETL Pipeline Documentation
+# Solana ETL Pipeline
 
-This repository contains two different ETL (Extract, Transform, Load) pipelines for processing blockchain transaction data from the Solana Blockchain.
+This repository contains two different ETL (Extract, Transform, Load) pipelines for processing blockchain transaction data from the Solana Blockchain. This project's objective is to build a robust, scalable ETL pipeline to extract data from Solana Blockchain, transform it based on specific business rules, and load it into a PostgreSQL database. The README file explains how to set up and run the project, as does the part2andpart3.md file, which includes troubleshooting, and a retrospect viewpoint.
 
-## ETL Pipeline using dbt, Apache Spark, Python, and PostgreSQL
+# ETL Pipeline using dbt, Apache Spark, Python, and PostgreSQL
 
-### Features
-- Extracts data from the Solana Blockchain.
-- Applies transformations based on business rules using dbt.
-- Loads the transformed data into PostgreSQL using Apache Spark.
+## Objective
+Design, develop, optimize, and troubleshoot a big data ETL (Extract, Transform, Load) pipeline using Python, SQL, DBT, and Spark. The ETL pipeline should extract data from Solana Blockchain nodes, transform it, and load the processed data into PostgreSQL for further analysis.
 
 ### Prerequisites
 Before running this ETL pipeline, ensure that you have the following dependencies installed:
-- Python (version X.X.X)
-- PostgreSQL (version X.X.X)
-- Apache Spark (version X.X.X)
-- dbt (version X.X.X)
+- Python (version 3.7+)
+- PostgreSQL ()
+- Pyspark
+- dbt (version 0.16.0)
+- Access to Solana Blockchain Nodes
+- Optional : A Unix-like system with `bash` or `sh` to run shell commands
 
+### Project Structure
+* `extract_data.py`: The Python script that implements the ETL pipeline.
+* `models\transformation\transform_data.sql`: The DBT model that transforms the data based on the business rules.
+* `dbt_project.yml`: The DBT configuration file.
+* `profiles.yml`: The DBT profile that contains the PostgreSQL connection details.
+
+### Extract Data from Solana Blockchain
+The script extract_data.py contains two functions for extracting data:
+
+* `get_block(slot)`: This function fetches block data for a given slot from Solana Blockchain. The data includes the transactions made in the block.
+* `get_latest_blockhash()`: This function fetches the latest blockhash from Solana Blockchain.
+  
 ### Setup and Usage
-1. Clone the repository to your local machine: `git clone https://github.com/your-username/etlpipeline.git`
+1. Clone the repository to your local machine: `git clone https://github.com/shahupdates/etldatapipelinecasestudy
 2. Navigate to the project directory: `cd etlpipeline`
 3. Install the required Python dependencies: `pip install -r requirements.txt`
-4. Configure the PostgreSQL connection in the profiles.yml file located in the .dbt directory. Modify the `dev` section with your PostgreSQL credentials.
-```
+4. Configure the PostgreSQL connection in the profiles.yml file located in the .dbt directory here:
+``` C:\users\<username>\.dbt\profiles.yaml```
+5. Modify the `dev` section with your PostgreSQL credentials.
+
 dev:
   target: dev
   outputs:
@@ -41,6 +55,7 @@ dev:
 
 ### Configuration
 The configuration for the ETL pipeline is defined in the dbt_project.yml file. It specifies the project name, version, and model settings. Modify the file according to your specific requirements.
+
 ```
 name: 'transform_data'
 version: '1.0.0'
@@ -56,11 +71,13 @@ models:
   transform_data:
     materialized: view
 ```
+
 ## Python-only ETL Pipeline
 
 ### Features
 - Retrieves the latest blockhash from the Solana Blockchain.
 - Retrieves transactions for unique addresses involved in the latest block.
+- Filters out the non magic-eden holding addresses.
 - Filters out records older than two years.
 - Inserts the filtered transactions into a PostgreSQL database.
 
