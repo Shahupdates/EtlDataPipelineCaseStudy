@@ -82,17 +82,17 @@ async def get_block(slot):
                         }
                         transactions_list.append(transaction_dict)  # Add the dictionary to the list
                         load_data([transaction_dict])  # Load data immediately
-            return transactions_list, result.get('blockTime'), result.get('parentSlot')  # Return parentSlot
+            return transactions_list, result.get('blockTime')
         else:
             print("Error: No 'result' key found in the response.")
             print(response_data)
-            return None, None, None  # Return None for parentSlot
+            return None, None
     except KeyError as e:
         print("Error: KeyError -", e)
-        return None, None, None  # Return None for parentSlot
+        return None, None
     except Exception as e:
         print("Error:", e)
-        return None, None, None  # Return None for parentSlot
+        return None, None
 
 
 def get_latest_blockhash():
@@ -130,6 +130,7 @@ def get_magic_nfts(address):
             print(f"Magic Eden NFT found for account {address}.")
             return [tokens.get('token')]
     return None
+
 
 
 async def get_magic_nfts_async(address):
@@ -191,22 +192,16 @@ def run_dbt_transformation():
 async def main():
     print("Getting latest block...")
     latest_block = get_latest_blockhash()
-    parent_block = latest_block
-    for _ in range(100):  # Process 100 blocks for demo, replace with a suitable stopping condition
-        if parent_block is not None:
-            print("Got block", parent_block)
-            print("Getting transactions for block...")
-            transactions, _, parent_block = await get_block(parent_block)  # Use the returned parentSlot
-            if transactions is not None:
-                print("Got transactions", transactions)
-                print("Loading data...")
-                load_data(transactions)
-                print("Running dbt transformation...")
-                run_dbt_transformation()
-            else:
-                break  # Stop if no transactions are returned
-        else:
-            break  # Stop if no parent block is returned
+    if latest_block is not None:
+        print("Got latest block", latest_block)
+        print("Getting transactions for block...")
+        transactions, _ = await get_block(latest_block)
+        if transactions is not None:
+            print("Got transactions", transactions)
+            print("Loading data...")
+            load_data(transactions)
+            print("Running dbt transformation...")
+            run_dbt_transformation()
 
     print("Stopping spark...")
     spark.stop()
