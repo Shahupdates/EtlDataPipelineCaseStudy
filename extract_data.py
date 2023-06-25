@@ -1,5 +1,9 @@
+import sys
+import tkinter as tk
+from tkinter import messagebox, ttk
+from threading import Thread
+from contextlib import redirect_stdout
 import subprocess
-
 import requests
 import json
 import datetime
@@ -101,37 +105,123 @@ def get_magic_nfts(address):
             return [tokens.get('token')]
     return None
 
-"""
+
 def transform_data(data):
     print(data[:5])  # print the first 5 items
+    filtered_data = []
+    for record in data:
+        address = record['address']
+        amount = record['amount']
+        timestamp = datetime.datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S')
+
+        nfts = get_magic_nfts(address)
+        if nfts:
+            for nft in nfts:
+                nft_record = {
+                    'address': address,
+                    'amount': amount,
+                    'timestamp': timestamp,
+                    'nft': nft
+                }
+                filtered_data.append(nft_record)
+
     filtered_data = [
         {
             'address': record['address'],
             'amount': record['amount'],
-            'timestamp': datetime.datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S')
+            'timestamp': datetime.datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S'),
+            'nft': record['nft']
         }
-        for record in data
+        for record in filtered_data
         if datetime.datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M:%S') > datetime.datetime.now() - datetime.timedelta(days=365 * 2)
     ]
     return filtered_data
-"""
+
+
 
 def load_data(data):
-    df = spark.createDataFrame(data, ["address", "amount", "timestamp"])
+    df = spark.createDataFrame(data, ["address", "amount", "timestamp", "nft"])  # Update column names
 
     # Cast the timestamp column to the appropriate data type
     df = df.withColumn("timestamp", to_timestamp(col("timestamp")))
 
-    # Deduplicate the data based on the address and timestamp columns
-    window = Window.partitionBy("address", "timestamp").orderBy(col("amount").desc())
+    # Deduplicate the data based on the address, timestamp, and nft columns
+    window = Window.partitionBy("address", "timestamp", "nft").orderBy(col("amount").desc())
     deduplicated_df = df.withColumn("row_number", row_number().over(window)).where(col("row_number") == 1).drop("row_number")
 
     deduplicated_df.write.jdbc(url=jdbcUrl, table=table, mode="append", properties=properties)
     print('Data loaded successfully.')
 
+
 def run_dbt_transformation():
     command = "dbt run --models +transformations.transform_data"
     subprocess.run(command, shell=True)
+
+def print_to_console(text):
+    console.insert(tk.END, str(text) + '\n')
+    console.see(tk.END)  # Auto-scroll to the end
+
+class IORedirector(object):
+    def __init__(self, text_area):
+        self.text_area = text_area
+
+class StdoutRedirector(IORedirector):
+    def write(self, str):
+        self.text_area.insert(tk.END, str)
+        self.text_area.see(tk.END)  # Auto-scroll to the end
+
+    def flush(self):
+        pass
+
+def run_etl_pipeline():
+    print("ETL pipeline execution started")
+    latest_block = get_latest_blockhash()
+    if latest_block is not None:
+        transactions, _ = get_block(latest_block)
+        if transactions is not None:
+            load_data(transactions)
+            run_dbt_transformation()
+    print("ETL pipeline execution completed")
+
+def start_etl_pipeline():
+    global thread
+    thread = Thread(target=run_etl_pipeline)
+    thread.start()
+
+def stop_etl_pipeline():
+    if thread.is_alive():
+        print("Stopping ETL pipeline...")
+        spark.stop()  # Assume spark is a globally available SparkSession
+        thread.join()
+        print("ETL pipeline stopped")
+
+root = tk.Tk()
+root.geometry('600x400')
+root.title("Solana ETL Pipeline")
+
+frame = ttk.Frame(root, padding="10 10 10 10")
+frame.pack(fill='both', expand=True)
+
+style = ttk.Style(root)
+style.configure("TButton",
+                foreground="midnight blue",
+                background="gold",
+                padding=10,
+                relief="raised",
+                font=('Helvetica', 14, 'bold'))
+
+start_button = ttk.Button(frame, text="Start ETL Pipeline", command=start_etl_pipeline)
+start_button.pack(side=tk.LEFT, fill='both', expand=True)
+
+stop_button = ttk.Button(frame, text="Stop ETL Pipeline", command=stop_etl_pipeline)
+stop_button.pack(side=tk.LEFT, fill='both', expand=True)
+
+console = tk.Text(frame)
+console.pack(fill='both', expand=True)
+
+sys.stdout = StdoutRedirector(console)
+
+root.mainloop()
 
 if __name__ == '__main__':
     latest_block = get_latest_blockhash()
@@ -142,3 +232,5 @@ if __name__ == '__main__':
             run_dbt_transformation()
 
     spark.stop()
+
+
