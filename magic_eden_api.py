@@ -4,7 +4,7 @@ class MagicEdenAPI:
     def __init__(self, session):
         self.session = session
 
-    def get_magic_nfts(self, address):
+    async def get_magic_nfts(self, address):
         magic_endpoint = f"https://api-mainnet.magiceden.dev/v2/wallets/{address}/tokens"
         async with self.session.get(magic_endpoint) as resp:
             if resp.status == 200:
