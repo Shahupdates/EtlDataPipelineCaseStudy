@@ -1,5 +1,6 @@
 import requests
 import json
+import datetime
 
 url = "https://api.mainnet-beta.solana.com"
 headers = {"Content-Type": "application/json"}
@@ -28,8 +29,9 @@ class SolanaAPI:
                     result = response_data['result']
                     transactions = result['transactions']
                     for transaction in transactions:
-                        # Process transaction data
-                        # ...
+                        transaction_data = self.process_transaction_data(transaction, result)
+                        if transaction_data:
+                            transactions_list.append(transaction_data)
                     return transactions_list, result.get('blockTime')
                 else:
                     print("Error: No 'result' key found in the response.")
