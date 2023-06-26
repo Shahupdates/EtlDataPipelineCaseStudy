@@ -1,0 +1,133 @@
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton, QProgressBar,
+    QMessageBox, QStyleFactory, QStatusBar, QInputDialog, QDialog, QToolBar, QAction, QMenu
+)
+from PyQt5.QtCore import QTranslator, Qt
+from PyQt5.QtGui import QIcon
+from extract_data import process_data
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Solana ETL")
+        self.setGeometry(100, 100, 600, 400)
+
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+
+        layout = QVBoxLayout(self.central_widget)
+
+        label = QLabel(self.tr("Click the button to start data extraction:"))
+        layout.addWidget(label)
+
+        self.progress_bar = QProgressBar(self)
+        layout.addWidget(self.progress_bar)
+
+        button = QPushButton(self.tr("Extract Data"), self)
+        button.clicked.connect(self.start_extraction)
+        layout.addWidget(button)
+
+        status_bar = QStatusBar()
+        self.setStatusBar(status_bar)
+
+        # Create a toolbar
+        self.init_toolbar()
+
+        # Create a menu
+        self.init_menu()
+
+    def init_toolbar(self):
+        self.toolbar = QToolBar(self)
+        self.addToolBar(self.toolbar)
+
+        self.toolbar.addAction(QIcon("logo.png"), "Home", self.home)
+        self.toolbar.addAction(QIcon("logo.png"), "Settings", self.show_settings_dialog)
+
+    def init_menu(self):
+        self.menu = self.menuBar()
+        self.help_menu = self.menu.addMenu('Help')
+
+        self.about_action = QAction(QIcon("logo.png"), 'About', self)
+        self.about_action.triggered.connect(self.show_about_dialog)
+        self.help_menu.addAction(self.about_action)
+
+    def start_extraction(self):
+        # Show a QInputDialog for setting the parameters of data extraction
+        param, ok = QInputDialog.getText(self, "Set Parameter", "Enter parameter for data extraction:")
+        if ok:
+            try:
+                # Update the progress bar during extraction
+                for progress_percentage in process_data(param):
+                    self.progress_bar.setValue(progress_percentage)
+                QMessageBox.information(self, self.tr("Extraction Completed"), self.tr("Data extraction process completed successfully."))
+            except Exception as e:
+                QMessageBox.critical(self, self.tr("Error"), self.tr(f"An error occurred during data extraction:\n{str(e)}"))
+
+    def show_about_dialog(self):
+        QMessageBox.about(self, "About Solana ETL", "<p>This is an ETL (Extract, Transform, Load) tool for Solana data.<br>"
+                                                      "<b>Developer:</b> Your Name<br>"
+                                                      "<b>Version:</b> 1.0</p>")
+
+    def show_settings_dialog(self):
+        settings, ok = QInputDialog.getText(self, "Settings", "Enter your settings:")
+        if ok:
+            QMessageBox.information(self, "Settings", "Settings updated.")
+
+    def home(self):
+        QMessageBox.information(self, "Home", "You are at the Home page.")
+
+    def show_feedback_dialog(self):
+        feedback, ok = QInputDialog.getText(self, self.tr("Feedback"), self.tr("Please provide your feedback:"))
+        if ok:
+            QMessageBox.information(self, self.tr("Thank You"), self.tr("Thank you for your feedback!"))
+
+    def show_onboarding_dialog(self):
+        onboarding_dialog = QDialog(self)
+        onboarding_dialog.setWindowTitle(self.tr("Onboarding"))
+
+        # Add onboarding content to the dialog
+        layout = QVBoxLayout(onboarding_dialog)
+        label = QLabel(self.tr("Welcome to Solana ETL!"))
+        layout.addWidget(label)
+
+        onboarding_dialog.exec_()
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+
+    # Set the application style
+    app.setStyle(QStyleFactory.create('Fusion'))
+
+    # Load a custom stylesheet for theming
+    app.setStyleSheet(open('styles.qss').read())
+
+    # Initialize the translator
+    translator = QTranslator()
+    translator.load("translations.qm")  # Load the translation file
+    app.installTranslator(translator)
+
+    window = MainWindow()
+
+    # Center the window on the screen
+    window.setGeometry(
+        app.desktop().screen().rect().center().x() - window.width() // 2,
+        app.desktop().screen().rect().center().y() - window.height() // 2,
+        window.width(),
+        window.height()
+    )
+
+    # Set application icon
+    window.setWindowIcon(QIcon('logo.png'))  # Set your logo
+
+    # Set the status bar message
+    window.statusBar().showMessage(window.tr("Ready"))
+
+    # Show feedback dialog
+    window.show_feedback_dialog()
+
+    # Show onboarding dialog
+    window.show_onboarding_dialog()
+
+    window.show()
+    sys.exit(app.exec_())
