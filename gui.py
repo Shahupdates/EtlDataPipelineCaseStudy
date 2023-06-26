@@ -1,5 +1,5 @@
 import sys
-import threading
+import asyncio
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton, QProgressBar,
     QMessageBox, QStyleFactory, QStatusBar, QInputDialog, QDialog, QToolBar, QAction, QMenu
@@ -58,13 +58,13 @@ class MainWindow(QMainWindow):
         param, ok = QInputDialog.getText(self, "Set Parameter", "Enter parameter for data extraction:")
         if ok:
             try:
-                threading.Thread(target=self.run_extraction, args=(param,)).start()
+                asyncio.create_task(self.run_extraction(param))
             except Exception as e:
                 QMessageBox.critical(self, self.tr("Error"), self.tr(f"An error occurred during data extraction:\n{str(e)}"))
 
-    def run_extraction(self, param):
+    async def run_extraction(self, param):
         # Assuming process_data() now yields progress updates
-        for progress_percentage in process_data(param):
+        async for progress_percentage in process_data(param):
             # Update the progress bar
             # You must wrap GUI updates with QMetaObject.invokeMethod when using threads
             QMetaObject.invokeMethod(self.progress_bar, "setValue", Qt.QueuedConnection, Q_ARG(int, progress_percentage))
