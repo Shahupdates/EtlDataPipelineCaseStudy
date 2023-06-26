@@ -14,7 +14,8 @@ headers = {"Content-Type": "application/json"}
 # Start Spark session
 spark = SparkSession.builder \
     .appName("Solana ETL") \
-    .config("spark.jars", "postgresql-42.6.0.jar") \
+    .config("spark.jars", "C:\\Users\\Me\\Desktop\\pythonProject\\postgresql-42.6.0.jar") \
+    .config("spark.driver.extraClassPath", "C:\\Users\\Me\\Desktop\\pythonProject\\postgresql-42.6.0.jar") \
     .getOrCreate()
 
 # PostgreSQL connection details

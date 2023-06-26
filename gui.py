@@ -1,24 +1,27 @@
 import sys
-import asyncio
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton, QProgressBar,
     QMessageBox, QStyleFactory, QStatusBar, QInputDialog, QDialog, QToolBar, QAction, QMenu
 )
-from PyQt5.QtCore import QThread, pyqtSignal, QMetaObject, Q_ARG, Qt, QTranslator
+from PyQt5.QtCore import Qt, QTranslator, pyqtSignal
 from PyQt5.QtGui import QIcon
-from extract_data import process_data
+import asyncqt
+import asyncio
+from extract_data import get_latest_blockhash, get_block, load_data, run_dbt_transformation, calculate_dau, calculate_daily_transaction_volume
 
-
-class Worker(QThread):
+class Worker(asyncio.Task):
     progress_signal = pyqtSignal(int)
     complete_signal = pyqtSignal()
 
-    def run(self):
-        asyncio.run(self.run_extraction())
-
-    async def run_extraction(self):
-        async for progress_percentage in process_data():
-            self.progress_signal.emit(progress_percentage)
+    async def run(self):
+        latest_block = get_latest_blockhash()
+        if latest_block is not None:
+            transactions, _ = await get_block(latest_block)
+            if transactions is not None:
+                deduplicated_df = load_data(transactions)
+                calculate_dau(deduplicated_df)
+                calculate_daily_transaction_volume(deduplicated_df)
+                run_dbt_transformation()
         self.complete_signal.emit()
 
 
@@ -71,7 +74,7 @@ class MainWindow(QMainWindow):
         self.worker = Worker()
         self.worker.progress_signal.connect(self.progress_bar.setValue)
         self.worker.complete_signal.connect(self.extraction_completed)
-        self.worker.start()
+        asyncio.ensure_future(self.worker.run())
 
     def extraction_completed(self):
         QMessageBox.information(self, self.tr("Extraction Completed"),
@@ -106,7 +109,8 @@ class MainWindow(QMainWindow):
 
         onboarding_dialog.exec_()
 
-if __name__ == '__main__':
+
+async def main():
     app = QApplication(sys.argv)
 
     # Set the application style
@@ -143,4 +147,13 @@ if __name__ == '__main__':
     window.show_onboarding_dialog()
 
     window.show()
-    sys.exit(app.exec_())
+
+    asyncio.ensure_future(app.exec_())
+
+    loop = asyncio.get_event_loop()
+    loop.run_forever()
+    loop.close()
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
