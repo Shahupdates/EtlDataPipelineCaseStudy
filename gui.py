@@ -4,9 +4,23 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton, QProgressBar,
     QMessageBox, QStyleFactory, QStatusBar, QInputDialog, QDialog, QToolBar, QAction, QMenu
 )
-from PyQt5.QtCore import QMetaObject, Q_ARG, Qt, QTranslator
+from PyQt5.QtCore import QThread, pyqtSignal, QMetaObject, Q_ARG, Qt, QTranslator
 from PyQt5.QtGui import QIcon
 from extract_data import process_data
+
+
+class Worker(QThread):
+    progress_signal = pyqtSignal(int)
+    complete_signal = pyqtSignal()
+
+    def run(self):
+        asyncio.run(self.run_extraction())
+
+    async def run_extraction(self):
+        async for progress_percentage in process_data():
+            self.progress_signal.emit(progress_percentage)
+        self.complete_signal.emit()
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -43,7 +57,7 @@ class MainWindow(QMainWindow):
         self.addToolBar(self.toolbar)
 
         self.toolbar.addAction(QIcon("logo.png"), "Home", self.home)
-        self.toolbar.addAction(QIcon("logo.png"), "Settings", self.show_settings_dialog)
+        self.toolbar.addAction(QIcon("logo2.png"), "Settings", self.show_settings_dialog)
 
     def init_menu(self):
         self.menu = self.menuBar()
@@ -54,27 +68,19 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(self.about_action)
 
     def start_extraction(self):
-        try:
-            asyncio.create_task(self.run_extraction())
-        except Exception as e:
-            QMessageBox.critical(self, self.tr("Error"),
-                                 self.tr(f"An error occurred during data extraction:\n{str(e)}"))
+        self.worker = Worker()
+        self.worker.progress_signal.connect(self.progress_bar.setValue)
+        self.worker.complete_signal.connect(self.extraction_completed)
+        self.worker.start()
 
-    async def run_extraction(self):
-        # Assuming process_data() now yields progress updates
-        async for progress_percentage in process_data():
-            # Update the progress bar
-            # You must wrap GUI updates with QMetaObject.invokeMethod when using threads
-            QMetaObject.invokeMethod(self.progress_bar, "setValue", Qt.QueuedConnection,
-                                     Q_ARG(int, progress_percentage))
-        QMetaObject.invokeMethod(QMessageBox, "information", Qt.QueuedConnection,
-                                 Q_ARG(str, self.tr("Extraction Completed")),
-                                 Q_ARG(str, self.tr("Data extraction process completed successfully.")))
+    def extraction_completed(self):
+        QMessageBox.information(self, self.tr("Extraction Completed"),
+                                self.tr("Data extraction process completed successfully."))
 
     def show_about_dialog(self):
         QMessageBox.about(self, "About Solana ETL", "<p>This is an ETL (Extract, Transform, Load) tool for Solana data.<br>"
-                                                      "<b>Developer:</b> Your Name<br>"
-                                                      "<b>Version:</b> 1.0</p>")
+                                                    "<b>Developer:</b> Your Name<br>"
+                                                    "<b>Version:</b> 1.0</p>")
 
     def show_settings_dialog(self):
         settings, ok = QInputDialog.getText(self, "Settings", "Enter your settings:")
@@ -90,15 +96,15 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, self.tr("Thank You"), self.tr("Thank you for your feedback!"))
 
     def show_onboarding_dialog(self):
-        self.onboarding_dialog = QDialog(self)
-        self.onboarding_dialog.setWindowTitle(self.tr("Onboarding"))
+        onboarding_dialog = QDialog(self)
+        onboarding_dialog.setWindowTitle(self.tr("Onboarding"))
 
         # Add onboarding content to the dialog
-        layout = QVBoxLayout(self.onboarding_dialog)
+        layout = QVBoxLayout(onboarding_dialog)
         label = QLabel(self.tr("Welcome to Solana ETL!"))
         layout.addWidget(label)
 
-        self.onboarding_dialog.show()
+        onboarding_dialog.exec_()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
