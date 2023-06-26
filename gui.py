@@ -1,9 +1,10 @@
 import sys
+import threading
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton, QProgressBar,
     QMessageBox, QStyleFactory, QStatusBar, QInputDialog, QDialog, QToolBar, QAction, QMenu
 )
-from PyQt5.QtCore import QTranslator, Qt
+from PyQt5.QtCore import QMetaObject, Q_ARG, Qt, QTranslator
 from PyQt5.QtGui import QIcon
 from extract_data import process_data
 
@@ -57,12 +58,17 @@ class MainWindow(QMainWindow):
         param, ok = QInputDialog.getText(self, "Set Parameter", "Enter parameter for data extraction:")
         if ok:
             try:
-                # Update the progress bar during extraction
-                for progress_percentage in process_data(param):
-                    self.progress_bar.setValue(progress_percentage)
-                QMessageBox.information(self, self.tr("Extraction Completed"), self.tr("Data extraction process completed successfully."))
+                threading.Thread(target=self.run_extraction, args=(param,)).start()
             except Exception as e:
                 QMessageBox.critical(self, self.tr("Error"), self.tr(f"An error occurred during data extraction:\n{str(e)}"))
+
+    def run_extraction(self, param):
+        # Assuming process_data() now yields progress updates
+        for progress_percentage in process_data(param):
+            # Update the progress bar
+            # You must wrap GUI updates with QMetaObject.invokeMethod when using threads
+            QMetaObject.invokeMethod(self.progress_bar, "setValue", Qt.QueuedConnection, Q_ARG(int, progress_percentage))
+        QMetaObject.invokeMethod(QMessageBox, "information", Qt.QueuedConnection, Q_ARG(str, self.tr("Extraction Completed")), Q_ARG(str, self.tr("Data extraction process completed successfully.")))
 
     def show_about_dialog(self):
         QMessageBox.about(self, "About Solana ETL", "<p>This is an ETL (Extract, Transform, Load) tool for Solana data.<br>"
