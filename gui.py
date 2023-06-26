@@ -54,21 +54,22 @@ class MainWindow(QMainWindow):
         self.help_menu.addAction(self.about_action)
 
     def start_extraction(self):
-        # Show a QInputDialog for setting the parameters of data extraction
-        param, ok = QInputDialog.getText(self, "Set Parameter", "Enter parameter for data extraction:")
-        if ok:
-            try:
-                asyncio.create_task(self.run_extraction(param))
-            except Exception as e:
-                QMessageBox.critical(self, self.tr("Error"), self.tr(f"An error occurred during data extraction:\n{str(e)}"))
+        try:
+            asyncio.create_task(self.run_extraction())
+        except Exception as e:
+            QMessageBox.critical(self, self.tr("Error"),
+                                 self.tr(f"An error occurred during data extraction:\n{str(e)}"))
 
-    async def run_extraction(self, param):
+    async def run_extraction(self):
         # Assuming process_data() now yields progress updates
-        async for progress_percentage in process_data(param):
+        async for progress_percentage in process_data():
             # Update the progress bar
             # You must wrap GUI updates with QMetaObject.invokeMethod when using threads
-            QMetaObject.invokeMethod(self.progress_bar, "setValue", Qt.QueuedConnection, Q_ARG(int, progress_percentage))
-        QMetaObject.invokeMethod(QMessageBox, "information", Qt.QueuedConnection, Q_ARG(str, self.tr("Extraction Completed")), Q_ARG(str, self.tr("Data extraction process completed successfully.")))
+            QMetaObject.invokeMethod(self.progress_bar, "setValue", Qt.QueuedConnection,
+                                     Q_ARG(int, progress_percentage))
+        QMetaObject.invokeMethod(QMessageBox, "information", Qt.QueuedConnection,
+                                 Q_ARG(str, self.tr("Extraction Completed")),
+                                 Q_ARG(str, self.tr("Data extraction process completed successfully.")))
 
     def show_about_dialog(self):
         QMessageBox.about(self, "About Solana ETL", "<p>This is an ETL (Extract, Transform, Load) tool for Solana data.<br>"
@@ -89,15 +90,15 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, self.tr("Thank You"), self.tr("Thank you for your feedback!"))
 
     def show_onboarding_dialog(self):
-        onboarding_dialog = QDialog(self)
-        onboarding_dialog.setWindowTitle(self.tr("Onboarding"))
+        self.onboarding_dialog = QDialog(self)
+        self.onboarding_dialog.setWindowTitle(self.tr("Onboarding"))
 
         # Add onboarding content to the dialog
-        layout = QVBoxLayout(onboarding_dialog)
+        layout = QVBoxLayout(self.onboarding_dialog)
         label = QLabel(self.tr("Welcome to Solana ETL!"))
         layout.addWidget(label)
 
-        onboarding_dialog.exec_()
+        self.onboarding_dialog.show()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
