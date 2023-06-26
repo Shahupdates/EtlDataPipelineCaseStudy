@@ -31,3 +31,30 @@ async def process_data():
                 spark_operations.run_dbt_transformation()
 
         spark_operations.stop_spark()
+
+magic_nfts_cache = {}
+
+
+async def get_magic_nfts_async(i, address):
+    # If address already checked, fetch the response from cache
+    if address in magic_nfts_cache:
+        return i, magic_nfts_cache[address]
+
+    magic_endpoint = f"https://api-mainnet.magiceden.dev/v2/wallets/{address}/tokens"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(magic_endpoint) as resp:
+            if resp.status == 200:
+                tokens = await resp.json()
+                # Store the response in cache
+                if isinstance(tokens, list) and tokens:
+                    magic_nfts_cache[address] = [token.get('token') for token in tokens]
+                    print(f"Magic Eden NFT(s) found for account {address}.")
+                    return i, magic_nfts_cache[address]
+                elif isinstance(tokens, dict) and tokens.get('token'):
+                    magic_nfts_cache[address] = [tokens.get('token')]
+                    print(f"Magic Eden NFT found for account {address}.")
+                    return i, magic_nfts_cache[address]
+
+                # Store negative response in cache
+                magic_nfts_cache[address] = None
+    return i, None
