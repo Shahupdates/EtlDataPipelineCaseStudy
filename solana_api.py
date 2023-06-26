@@ -1,6 +1,10 @@
+import asyncio
+
 import requests
 import json
 import datetime
+
+from extract_data import ignored_accounts, get_magic_nfts_async
 
 url = "https://api.mainnet-beta.solana.com"
 headers = {"Content-Type": "application/json"}
@@ -29,7 +33,7 @@ class SolanaAPI:
                     result = response_data['result']
                     transactions = result['transactions']
                     for transaction in transactions:
-                        transaction_data = self.process_transaction_data(transaction, result)
+                        transaction_data = await self.process_transaction_data(transaction, result)  # Add 'await' here
                         if transaction_data:
                             transactions_list.append(transaction_data)
                     return transactions_list, result.get('blockTime')
@@ -66,3 +70,32 @@ class SolanaAPI:
         except Exception as e:
             print("Error:", e)
             return None
+
+    def process_transaction_data(self, transaction, result):
+        message = transaction['transaction']['message']
+        meta = transaction['meta']
+        tasks = []
+        for i, account in enumerate(message['accountKeys']):
+            if account not in ignored_accounts:  # Exclude ignored accounts
+                print(f"Checking Magic Eden NFTs for account {account}")
+                tasks.append(get_magic_nfts_async(i, account))
+        for future in asyncio.as_completed(tasks):
+            i, magic_nfts = await future
+            if magic_nfts:
+                account = message['accountKeys'][i]
+                print(f"Finished checking Magic Eden NFTs for account {account}")
+                pre_balance = meta['preBalances'][i]
+                post_balance = meta['postBalances'][i]
+                if account in message['instructions'][0]['accounts']:
+                    amount = post_balance - pre_balance  # Receiver
+                else:
+                    amount = pre_balance - post_balance  # Sender
+                amount_sol = amount / 1_000_000_000  # convert lamports to SOL
+                transaction_dict = {
+                    'address': account,
+                    'amount': amount,
+                    'amount_sol': amount_sol,
+                    'timestamp': datetime.datetime.fromtimestamp(result['blockTime']).strftime('%Y-%m-%d %H:%M:%S')
+                }
+                return transaction_dict
+        return None
