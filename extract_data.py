@@ -22,7 +22,9 @@ async def process_data():
         magic_eden_api = MagicEdenAPI(session)
         spark_operations = SparkOperations()
 
-        while True:  # Loop to continuously process data
+        # Set a limit for how many blocks to process in one go
+        num_blocks_to_process = 10
+        for i in range(num_blocks_to_process):
             latest_block = await solana_api.get_latest_blockhash()
             if latest_block is not None:
                 transactions, _ = await solana_api.get_block(latest_block)
@@ -33,9 +35,8 @@ async def process_data():
                     spark_operations.calculate_daily_transaction_volume(deduplicated_df)
                     spark_operations.run_dbt_transformation()
 
-            # Sleep for a certain amount of time to prevent excessive polling.
-            # You can adjust the sleep interval according to your needs.
-            time.sleep(60)
+            # Yield progress updates as a percentage
+            yield (i+1) / num_blocks_to_process * 100
 
         spark_operations.stop_spark()
 
